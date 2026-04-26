@@ -1,3 +1,4 @@
+import os
 import unicodedata
 
 from flask import Flask, abort, redirect, render_template, request, url_for
@@ -31,6 +32,9 @@ from db import (
 
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ.get(
+    "FLASK_SECRET_KEY", "dev-secret-key-change-me"
+)
 init_app(app)
 
 with app.app_context():
@@ -901,4 +905,8 @@ def reopen_session(token):
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True)
+    app.run(
+        host=os.environ.get("HOST", "127.0.0.1"),
+        port=int(os.environ.get("PORT", "5000")),
+        debug=os.environ.get("FLASK_DEBUG", "0") == "1",
+    )

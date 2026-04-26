@@ -1,3 +1,4 @@
+import os
 import secrets
 import sqlite3
 from pathlib import Path
@@ -7,7 +8,9 @@ from flask import g
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE_PATH = BASE_DIR / "nikount.db"
+DATABASE_PATH = Path(
+    os.environ.get("NIKOUNT_DATABASE_PATH", str(BASE_DIR / "nikount.db"))
+)
 ANIMAL_EMOJIS = [
     "\U0001F436",
     "\U0001F431",

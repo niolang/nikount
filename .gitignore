@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+nikount.db
+.env
+.DS_Store

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ session["title"] }} - {{ role }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <section class="overview-card">
+            <h1>{{ session["title"] }} - {{ role }}</h1>
+            <div class="meta-list">
+                <div class="meta-item">
+                    <span class="meta-label">Status</span>
+                    <span class="badge {% if session['status'] == 'open' %}badge-open{% elif session['status'] == 'frozen' %}badge-frozen{% else %}badge-closed{% endif %}">
+                        {{ session["status"] }}
+                    </span>
+                </div>
+            </div>
+            <p class="muted">{{ session["description"] }}</p>
+
+            <div class="overview-section">
+                <h2>Participants</h2>
+                {% if overview_participants %}
+                <ul class="participants-row">
+                    {% for participant in overview_participants %}
+                    <li class="participant-chip {{ participant['balance_class'] }}">
+                        <span>{{ participant["emoji"] }} {{ participant["name"] }}</span>
+                        <span class="participant-balance">{{ participant["balance_text"] }}</span>
+                        {% if role == "admin" %}
+                        <form method="post" action="{{ url_for('remove_participant', token=token, participant_public_id=participant['public_id']) }}">
+                            <button class="icon-button" type="submit" aria-label="Remove participant" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
+                        </form>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="muted">No participants yet.</p>
+                {% endif %}
+
+                {% if role == "admin" %}
+                <div class="overview-subsection">
+                    {% if participant_error %}
+                    <p class="alert alert-error">{{ participant_error }}</p>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('add_participant', token=token) }}">
+                        <input
+                            id="name"
+                            name="name"
+                            type="text"
+                            value="{{ participant_name }}"
+                            placeholder='Use ";" to add multiple participants at once'
+                            {% if session["status"] != "open" %}disabled{% endif %}
+                            required
+                        >
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if role == "admin" %}
+            <div class="session-actions">
+                {% if session["status"] == "open" %}
+                <form method="post" action="{{ url_for('close_session', token=token) }}">
+                    <button type="submit">Freeze session</button>
+                </form>
+                {% elif session["status"] == "frozen" %}
+                <form method="post" action="{{ url_for('reopen_session', token=token) }}">
+                    <button type="submit">Reopen session</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </section>
+
+        <div class="card-stack">
+            <section class="card entry-card card-soft">
+                <div>
+                    <h3>{% if expense_form_mode == "edit" %}Edit Expense{% else %}Add Expense{% endif %}</h3>
+
+                    {% if expense_error %}
+                    <p class="alert alert-error">{{ expense_error }}</p>
+                    {% endif %}
+                    {% if role == "viewer" %}
+                    <p class="alert alert-info">Viewer expenses are submitted for admin approval.</p>
+                    {% endif %}
+                    {% if session["status"] == "frozen" %}
+                    <p class="alert alert-info">Session is frozen. Only reimbursements can be marked as done.</p>
+                    {% endif %}
+                    {% if session["status"] == "closed" %}
+                    <p class="alert alert-info">Session is closed. All reimbursements are done.</p>
+                    {% endif %}
+
+                    {% if participants %}
+                    <form method="post" action="{% if expense_form_mode == 'edit' %}{{ url_for('update_expense_view', token=token, expense_public_id=editing_expense_id) }}{% else %}{{ url_for('add_expense', token=token) }}{% endif %}">
+                        <div class="expense-top-row">
+                            <p class="expense-amount-field">
+                                <input
+                                    id="expense-amount"
+                                    name="amount"
+                                    type="text"
+                                    inputmode="decimal"
+                                    value="{{ expense_amount }}"
+                                    placeholder="amount"
+                                    oninput="var cleanedValue = this.value.replace(/[^0-9.,]/g, '').replace(/,/g, '.'); var parts = cleanedValue.split('.'); if (parts.length > 2) { cleanedValue = parts[0] + '.' + parts.slice(1).join(''); } this.value = cleanedValue;"
+                                    onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
+                                    required
+                                >
+                            </p>
+
+                            <p class="expense-name-field">
+                                <input
+                                    id="expense-name"
+                                    name="name"
+                                    type="text"
+                                    value="{{ expense_name }}"
+                                    placeholder="expense name"
+                                    onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
+                                    required
+                                >
+                            </p>
+                        </div>
+
+                        <div>
+                            <label>Concerned participants</label>
+                            <div class="concerned-selector">
+                                {% for participant in participants %}
+                                <label>
+                                    <span>{{ participant["emoji"] }} {{ participant["name"] }}</span>
+                                    <input
+                                        type="checkbox"
+                                        name="concerned_participant_public_ids"
+                                        value="{{ participant['public_id'] }}"
+                                        {% if participant['public_id'] in expense_concerned %}checked{% endif %}
+                                    >
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <p><label>Who paid?</label></p>
+                        <div class="payer-selector">
+                            {% for participant in participants %}
+                            <button
+                                type="submit"
+                                name="payer_participant_public_id"
+                                value="{{ participant['public_id'] }}"
+                                class="{% if expense_form_mode == 'edit' and expense_payer == participant['public_id'] %}payer-original{% endif %}"
+                                {% if session["status"] != "open" %}disabled{% endif %}
+                            >
+                                <span class="payer-label">
+                                    <span>{{ participant["emoji"] }} {{ participant["name"] }}</span>
+                                    {% if expense_form_mode == "edit" and expense_payer == participant['public_id'] %}
+                                    <span class="payer-badge">payer</span>
+                                    {% endif %}
+                                </span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                        {% if expense_form_mode == "edit" %}
+                        <div class="form-actions" style="margin-top: 10px;">
+                            <a class="button-link button-secondary" href="{{ url_for('session_access', token=token) }}">Cancel</a>
+                        </div>
+                        {% endif %}
+                    </form>
+                    {% else %}
+                    <p class="muted">Add at least one participant before creating expenses.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="card reimbursements-card">
+                <h2>Reimbursements</h2>
+                {% if reimbursements %}
+                <div class="reimbursements-body">
+                    {% for reimbursement in reimbursements %}
+                    <span class="reimbursement-line">
+                        {{ reimbursement["from_name"] }} pays {{ "%.2f"|format(reimbursement["amount_cents"] / 100) }} to {{ reimbursement["to_name"] }}
+                        {% if session["status"] == "frozen" %}
+                        <form method="post" action="{{ url_for('mark_reimbursement_done', token=token) }}">
+                            <input type="hidden" name="payer_participant_public_id" value="{{ reimbursement['from_participant_public_id'] }}">
+                            <input type="hidden" name="concerned_participant_public_id" value="{{ reimbursement['to_participant_public_id'] }}">
+                            <input type="hidden" name="amount_cents" value="{{ reimbursement['amount_cents'] }}">
+                            <button type="submit">Reimbursement done</button>
+                        </form>
+                        {% endif %}
+                    </span>
+                    {% if not loop.last %}<br>{% endif %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="muted">No reimbursements needed.</p>
+                {% endif %}
+            </section>
+
+            <section class="card expenses-card">
+                <h2>Expenses</h2>
+                {% if expenses %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Expense</th>
+                                <th>Amount</th>
+                                <th>Paid by</th>
+                                <th>Status</th>
+                                <th>Submitted by</th>
+                                {% for participant in participants %}
+                                <th>{{ participant["emoji"] }} {{ participant["name"] }}</th>
+                                {% endfor %}
+                                <th class="actions-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr>
+                                <td>{{ expense["name"] }}</td>
+                                <td>{{ "%.2f"|format(expense["amount_cents"] / 100) }}</td>
+                                <td>{{ expense["payer_display_name"] }}</td>
+                                <td>
+                                    <span class="badge {% if expense['status'] == 'approved' %}badge-approved{% elif expense['status'] == 'pending' %}badge-pending{% else %}badge-rejected{% endif %}">
+                                        {{ expense["status"] }}
+                                    </span>
+                                </td>
+                                <td>{{ expense["submitted_by_role"] }}</td>
+                                {% for participant in participants %}
+                                <td class="cell-center">
+                                    {% if participant_name_by_public_id[participant["public_id"]] in expense["concerned_display_names"] %}&#9989;{% endif %}
+                                </td>
+                                {% endfor %}
+                                <td class="actions-cell">
+                                    <div class="inline-actions">
+                                        {% if role == "admin" or expense["submitted_by_role"] == "viewer" %}
+                                        <a class="button-link button-secondary" href="{{ url_for('edit_expense', token=token, expense_public_id=expense['public_id']) }}">Edit</a>
+                                        {% endif %}
+                                        {% if role == "admin" %}
+                                        <form method="post" action="{{ url_for('delete_expense_view', token=token, expense_public_id=expense['public_id']) }}">
+                                            <button class="button-danger" type="submit" {% if session["status"] != "open" %}disabled{% endif %}>Delete</button>
+                                        </form>
+                                        {% if expense["status"] == "pending" %}
+                                        <form method="post" action="{{ url_for('approve_expense', token=token, expense_public_id=expense['public_id']) }}">
+                                            <button type="submit" {% if session["status"] != "open" %}disabled{% endif %}>Approve</button>
+                                        </form>
+                                        <form method="post" action="{{ url_for('reject_expense', token=token, expense_public_id=expense['public_id']) }}">
+                                            <button class="button-danger" type="submit" {% if session["status"] != "open" %}disabled{% endif %}>Reject</button>
+                                        </form>
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="muted">No expenses yet.</p>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+</body>
+</html>

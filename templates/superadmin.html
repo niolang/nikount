@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Superadmin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <section class="overview-card">
+            <h1>Superadmin</h1>
+            <p class="muted">Overview of every session with direct access links and totals.</p>
+            <p><strong>Access link</strong></p>
+            <a class="link-box" href="{{ request.url_root }}superadmin/{{ superadmin_token }}">
+                {{ request.url_root }}superadmin/{{ superadmin_token }}
+            </a>
+        </section>
+
+        <section class="card sessions-card">
+            <h2>Sessions</h2>
+            {% if delete_error %}
+            <p class="alert alert-error">{{ delete_error }}</p>
+            {% endif %}
+
+            {% if sessions %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Description</th>
+                            <th>Created at</th>
+                            <th>Total amount</th>
+                            <th>Admin link</th>
+                            <th>Viewer link</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in sessions %}
+                        <tr>
+                            <td>{{ session["title"] }}</td>
+                            <td>
+                                <span class="badge {% if session['status'] == 'open' %}badge-open{% elif session['status'] == 'frozen' %}badge-frozen{% else %}badge-closed{% endif %}">
+                                    {{ session["status"] }}
+                                </span>
+                            </td>
+                            <td>{{ session["description"] }}</td>
+                            <td>{{ session["created_at"] }}</td>
+                            <td>{{ "%.2f"|format(session["total_amount_cents"] / 100) }}</td>
+                            <td><a href="{{ request.url_root }}s/{{ session['admin_token'] }}">admin</a></td>
+                            <td><a href="{{ request.url_root }}s/{{ session['viewer_token'] }}">viewer</a></td>
+                            <td>
+                                <form method="post" action="{{ url_for('delete_session_view', token=superadmin_token, session_public_id=session['public_id']) }}">
+                                    <input
+                                        name="password"
+                                        type="password"
+                                        placeholder="Type password then Enter"
+                                        aria-label="Superadmin password"
+                                        required
+                                    >
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted">No sessions yet.</p>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

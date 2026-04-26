@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Superadmin Access</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <section class="overview-card">
+            <h1>{% if setup_mode %}Set Superadmin Password{% else %}Superadmin Access{% endif %}</h1>
+            <p class="muted">
+                {% if setup_mode %}
+                This password will protect access to the global session list.
+                {% else %}
+                Enter the shared password to open the superadmin page.
+                {% endif %}
+            </p>
+        </section>
+
+        <section class="card superadmin-access-card">
+            {% if error %}
+            <p class="alert alert-error">{{ error }}</p>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('superadmin_access') }}">
+                <p>
+                    <label for="password">Password</label><br>
+                    <input id="password" name="password" type="password" required>
+                </p>
+                {% if setup_mode %}
+                <p>
+                    <label for="confirm_password">Confirm password</label><br>
+                    <input id="confirm_password" name="confirm_password" type="password" required>
+                </p>
+                {% endif %}
+                <div class="form-actions">
+                    <button type="submit">
+                        {% if setup_mode %}Save password{% else %}Open superadmin page{% endif %}
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>

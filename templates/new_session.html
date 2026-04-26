@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create Session</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <section class="overview-card">
+            <h1>Create a Session</h1>
+            <p class="muted">Start a weekend, trip, or shared event and generate admin and viewer links.</p>
+        </section>
+
+        <section class="card create-session-card">
+            {% if error %}
+            <p class="alert alert-error">{{ error }}</p>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('new_session') }}">
+                <p>
+                    <label for="title">Title</label><br>
+                    <input id="title" name="title" type="text" value="{{ title }}" required>
+                </p>
+
+                <p>
+                    <label for="description">Description</label><br>
+                    <textarea id="description" name="description" rows="4">{{ description }}</textarea>
+                </p>
+
+                <div class="form-actions">
+                    <button type="submit">Create session</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>

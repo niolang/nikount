@@ -1,7 +1,7 @@
 import os
 import unicodedata
 
-from flask import Flask, abort, redirect, render_template, request, url_for
+from flask import Flask, abort, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import (
@@ -264,6 +264,21 @@ def is_superadmin_password_valid(password):
     return check_password_hash(password_hash, password)
 
 
+def get_create_session_password_hash():
+    return get_metadata_value("create_session_password_hash")
+
+
+def has_create_session_password():
+    return get_create_session_password_hash() is not None
+
+
+def is_create_session_password_valid(password):
+    password_hash = get_create_session_password_hash()
+    if password_hash is None:
+        return False
+    return check_password_hash(password_hash, password)
+
+
 def render_session_page(
     session,
     role,
@@ -281,6 +296,11 @@ def render_session_page(
     session = sync_session_status(session)
     participants = list_participants(session["public_id"])
     expenses = list_expenses(session["public_id"])
+    session_total_cents = sum(
+        expense["amount_cents"]
+        for expense in expenses
+        if expense["status"] != "rejected" and expense["name"].lower() != "reimbursement"
+    )
     approved_participants, approved_expenses = get_approved_expenses_for_reimbursements(
         session["public_id"]
     )
@@ -320,6 +340,7 @@ def render_session_page(
     return render_template(
         "session_access.html",
         session=session,
+        session_total_text=format_cents(session_total_cents),
         role=role,
         token=token,
         participants=participants,
@@ -341,11 +362,58 @@ def render_session_page(
 
 @app.route("/")
 def index():
+    return render_template(
+        "index.html",
+        error=None,
+        setup_mode=not has_create_session_password(),
+    )
+
+
+def can_create_session():
+    return session.get("can_create_session", False)
+
+
+@app.route("/unlock-session-creation", methods=["POST"])
+def unlock_session_creation():
+    password = request.form.get("password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not has_create_session_password():
+        if not password:
+            return render_template(
+                "index.html",
+                error="Password is required.",
+                setup_mode=True,
+            )
+        if password != confirm_password:
+            return render_template(
+                "index.html",
+                error="Passwords do not match.",
+                setup_mode=True,
+            )
+
+        set_metadata_value(
+            "create_session_password_hash", generate_password_hash(password)
+        )
+        session["can_create_session"] = True
+        return redirect(url_for("new_session"))
+
+    if not is_create_session_password_valid(password):
+        return render_template(
+            "index.html",
+            error="Wrong password.",
+            setup_mode=False,
+        )
+
+    session["can_create_session"] = True
     return redirect(url_for("new_session"))
 
 
 @app.route("/sessions/new", methods=["GET", "POST"])
 def new_session():
+    if not can_create_session():
+        return redirect(url_for("index"))
+
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         description = request.form.get("description", "").strip()

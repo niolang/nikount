@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nikount</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <section class="overview-card">
+            <h1>Nikount</h1>
+            <p class="muted">A simple shared-expenses tool for weekends, trips, and group events.</p>
+            <p class="muted">Create one session, share the viewer link, approve submitted expenses, and let Nikount compute the reimbursements at the end.</p>
+        </section>
+
+        <section class="card create-session-card">
+            <h2>{% if setup_mode %}Set creation password{% else %}Create a new session{% endif %}</h2>
+            <p class="muted">
+                {% if setup_mode %}
+                Choose the password that will protect session creation.
+                {% else %}
+                Enter the creation password to open the session setup page.
+                {% endif %}
+            </p>
+
+            {% if error %}
+            <p class="alert alert-error">{{ error }}</p>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('unlock_session_creation') }}">
+                <p>
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="{% if setup_mode %}New creation password{% else %}Creation password{% endif %}"
+                        required
+                    >
+                </p>
+                {% if setup_mode %}
+                <p>
+                    <input
+                        id="confirm_password"
+                        name="confirm_password"
+                        type="password"
+                        placeholder="Confirm creation password"
+                        required
+                    >
+                </p>
+                {% endif %}
+
+                <div class="form-actions">
+                    <button type="submit">
+                        {% if setup_mode %}Save password{% else %}Create new session{% endif %}
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>

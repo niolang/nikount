@@ -1,46 +1,46 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Session Created</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>{{ t("session_created") }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_version) }}">
 </head>
 <body>
     <div class="page-shell">
         <section class="overview-card">
-            <h1>Session Created</h1>
+            <h1>{{ t("session_created") }}</h1>
             <div class="meta-list">
                 <div class="meta-item">
-                    <span class="meta-label">Title</span>
+                    <span class="meta-label">{{ t("title") }}</span>
                     {{ session["title"] }}
                 </div>
                 <div class="meta-item">
-                    <span class="meta-label">Status</span>
-                    <span class="badge badge-open">open</span>
+                    <span class="meta-label">{{ t("status") }}</span>
+                    <span class="badge badge-open">{{ t("open") }}</span>
                 </div>
             </div>
-            <p class="muted">{{ session["description"] }}</p>
         </section>
 
         <section class="card access-links-card">
-            <h2>Access Links</h2>
+            <h2>{{ t("access_links") }}</h2>
 
-            <p><strong>Admin</strong></p>
+            <p><strong>{{ t("admin") }}</strong></p>
             <a class="link-box" href="{{ request.url_root }}s/{{ session['admin_token'] }}">
                 {{ request.url_root }}s/{{ session['admin_token'] }}
             </a>
 
-            <p><strong>Viewer</strong></p>
+            <p><strong>{{ t("viewer") }}</strong></p>
             <a class="link-box" href="{{ request.url_root }}s/{{ session['viewer_token'] }}">
                 {{ request.url_root }}s/{{ session['viewer_token'] }}
             </a>
 
-            <p><strong>Superadmin access</strong></p>
+            <p><strong>{{ t("superadmin_access") }}</strong></p>
             <a class="link-box" href="{{ superadmin_access_url }}">
                 {{ superadmin_access_url }}
             </a>
         </section>
+        {% include "footer.html" %}
     </div>
 </body>
 </html>

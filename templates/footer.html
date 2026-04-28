@@ -1,0 +1,10 @@
+<footer class="card app-footer">
+    <p>
+        Nikount v0.1 -
+        {{ t("footer_message") }} &#9749; / &#127866;.
+    </p>
+    <nav class="footer-links" aria-label="{{ t('superadmin_access') }}">
+        <a href="{{ url_for('new_session') }}">{{ t("new_session") }}</a>
+        <a href="{{ url_for('superadmin_access') }}">{{ t("superadmin_access") }}</a>
+    </nav>
+</footer>

@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Create Session</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>{{ t("create_new_session") }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_version) }}">
 </head>
 <body>
     <div class="page-shell">
         <section class="overview-card">
-            <h1>Create a Session</h1>
-            <p class="muted">Start a weekend, trip, or shared event and generate admin and viewer links.</p>
+            <h1>{{ t("create_new_session") }}</h1>
+            <p class="muted">{{ t("create_session_intro") }}</p>
         </section>
 
         <section class="card create-session-card">
@@ -20,20 +20,16 @@
 
             <form method="post" action="{{ url_for('new_session') }}">
                 <p>
-                    <label for="title">Title</label><br>
+                    <label for="title">{{ t("title") }}</label><br>
                     <input id="title" name="title" type="text" value="{{ title }}" required>
                 </p>
 
-                <p>
-                    <label for="description">Description</label><br>
-                    <textarea id="description" name="description" rows="4">{{ description }}</textarea>
-                </p>
-
                 <div class="form-actions">
-                    <button type="submit">Create session</button>
+                    <button type="submit">{{ t("create_session") }}</button>
                 </div>
             </form>
         </section>
+        {% include "footer.html" %}
     </div>
 </body>
 </html>

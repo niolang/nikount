@@ -1,26 +1,59 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Nikount</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>{{ t("index_title") }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_version) }}">
 </head>
 <body>
     <div class="page-shell">
-        <section class="overview-card">
-            <h1>Nikount</h1>
-            <p class="muted">A simple shared-expenses tool for weekends, trips, and group events.</p>
-            <p class="muted">Create one session, share the viewer link, approve submitted expenses, and let Nikount compute the reimbursements at the end.</p>
+        <section class="overview-card index-hero">
+            <div>
+                <p class="hero-kicker">{{ t("hero_kicker") }}</p>
+                <h1>Nikount</h1>
+                <p class="hero-copy">
+                    {{ t("hero_copy") }}
+                </p>
+                <div class="hero-actions">
+                    <a class="button-link" href="#create-session">{{ t("create_new_session") }}</a>
+                    <a class="button-link button-secondary" href="{{ url_for('demo') }}">{{ t("demo_viewer") }}</a>
+                </div>
+            </div>
+            <div class="hero-stat-card">
+                <span class="meta-label">{{ t("hero_example") }}</span>
+                <strong>{{ t("hero_friends") }}</strong>
+                <span>{{ t("hero_weekend") }}</span>
+                <span>{{ t("hero_clear_reimbursements") }}</span>
+            </div>
         </section>
 
-        <section class="card create-session-card">
-            <h2>{% if setup_mode %}Set creation password{% else %}Create a new session{% endif %}</h2>
+        <section class="feature-grid">
+            <article class="feature-card feature-card-green">
+                <strong>{{ t("feature_links_title") }}</strong>
+                <p>{{ t("feature_links_body") }}</p>
+            </article>
+            <article class="feature-card feature-card-blue">
+                <strong>{{ t("feature_participants_title") }}</strong>
+                <p>{{ t("feature_participants_body") }}</p>
+            </article>
+            <article class="feature-card feature-card-yellow">
+                <strong>{{ t("feature_admin_title") }}</strong>
+                <p>{{ t("feature_admin_body") }}</p>
+            </article>
+            <article class="feature-card feature-card-red">
+                <strong>{{ t("feature_reimbursements_title") }}</strong>
+                <p>{{ t("feature_reimbursements_body") }}</p>
+            </article>
+        </section>
+
+        <section id="create-session" class="card create-session-card index-create-card">
+            <h2>{% if setup_mode %}{{ t("set_creation_password") }}{% else %}{{ t("create_new_session") }}{% endif %}</h2>
             <p class="muted">
                 {% if setup_mode %}
-                Choose the password that will protect session creation.
+                {{ t("set_creation_password_help") }}
                 {% else %}
-                Enter the creation password to open the session setup page.
+                {{ t("create_session_password_help") }}
                 {% endif %}
             </p>
 
@@ -34,7 +67,7 @@
                         id="password"
                         name="password"
                         type="password"
-                        placeholder="{% if setup_mode %}New creation password{% else %}Creation password{% endif %}"
+                        placeholder="{% if setup_mode %}{{ t('new_creation_password') }}{% else %}{{ t('creation_password') }}{% endif %}"
                         required
                     >
                 </p>
@@ -44,7 +77,7 @@
                         id="confirm_password"
                         name="confirm_password"
                         type="password"
-                        placeholder="Confirm creation password"
+                        placeholder="{{ t('confirm_creation_password') }}"
                         required
                     >
                 </p>
@@ -52,11 +85,13 @@
 
                 <div class="form-actions">
                     <button type="submit">
-                        {% if setup_mode %}Save password{% else %}Create new session{% endif %}
+                        {% if setup_mode %}{{ t("save_password") }}{% else %}{{ t("create_new_session") }}{% endif %}
                     </button>
+                    <a class="button-link button-secondary" href="{{ url_for('demo') }}">{{ t("demo_viewer") }}</a>
                 </div>
             </form>
         </section>
+        {% include "footer.html" %}
     </div>
 </body>
 </html>

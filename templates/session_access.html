@@ -1,45 +1,42 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ session["title"] }} - {{ role }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>{{ session["title"] }} - {{ t(role) }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_version) }}">
 </head>
 <body>
     <div class="page-shell">
         <section class="overview-card">
-            <h1>{{ session["title"] }} - {{ role }}</h1>
+            <h1>{{ session["title"] }} - {{ t(role) }}</h1>
             <div class="meta-list">
                 <div class="meta-item">
-                    <span class="meta-label">Status</span>
-                    <span class="badge {% if session['status'] == 'open' %}badge-open{% elif session['status'] == 'frozen' %}badge-frozen{% else %}badge-closed{% endif %}">
-                        {{ session["status"] }}
-                    </span>
+                    <span class="meta-label">{{ t("status") }}</span>
+                    <div class="status-row">
+                        <span class="badge {% if session['status'] == 'open' %}badge-open{% elif session['status'] == 'frozen' %}badge-frozen{% else %}badge-closed{% endif %}">
+                            {{ t(session["status"]) }}
+                        </span>
+                        {% if role == "admin" and session["status"] == "open" %}
+                        <form class="status-action-form" method="post" action="{{ url_for('close_session', token=token) }}">
+                            <button class="status-action-button badge badge-open" type="submit">{{ t("freeze") }}</button>
+                        </form>
+                        {% elif role == "admin" and session["status"] == "frozen" %}
+                        <form class="status-action-form" method="post" action="{{ url_for('reopen_session', token=token) }}">
+                            <button class="status-action-button badge badge-frozen" type="submit">{{ t("reopen") }}</button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="meta-item">
-                    <span class="meta-label">Session total</span>
+                    <span class="meta-label">{{ t("session_total") }}</span>
                     <strong>{{ session_total_text }}</strong>
+                    <span class="meta-secondary">{{ session_average_text }} / {{ t("participant") }}</span>
                 </div>
             </div>
-            <p class="muted">{{ session["description"] }}</p>
 
             <div class="overview-section">
-                {% if role == "admin" %}
-                <div class="session-actions">
-                    {% if session["status"] == "open" %}
-                    <form method="post" action="{{ url_for('close_session', token=token) }}">
-                        <button type="submit">Freeze session</button>
-                    </form>
-                    {% elif session["status"] == "frozen" %}
-                    <form method="post" action="{{ url_for('reopen_session', token=token) }}">
-                        <button type="submit">Reopen session</button>
-                    </form>
-                    {% endif %}
-                </div>
-                {% endif %}
-
-                <h2>Participants</h2>
+                <h2>{{ t("participants") }}</h2>
                 {% if overview_participants %}
                 <ul class="participants-row">
                     {% for participant in overview_participants %}
@@ -48,14 +45,14 @@
                         <span class="participant-balance">{{ participant["balance_text"] }}</span>
                         {% if role == "admin" %}
                         <form method="post" action="{{ url_for('remove_participant', token=token, participant_public_id=participant['public_id']) }}">
-                            <button class="icon-button" type="submit" aria-label="Remove participant" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
+                            <button class="icon-button" type="submit" aria-label="{{ t('remove_participant') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
                         </form>
                         {% endif %}
                     </li>
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p class="muted">No participants yet.</p>
+                <p class="muted">{{ t("no_participants_yet") }}</p>
                 {% endif %}
 
                 {% if role == "admin" %}
@@ -69,7 +66,7 @@
                             name="name"
                             type="text"
                             value="{{ participant_name }}"
-                            placeholder='Use ";" to add multiple participants at once'
+                            placeholder="{{ t('use_semicolon_placeholder') }}"
                             {% if session["status"] != "open" %}disabled{% endif %}
                             required
                         >
@@ -82,22 +79,26 @@
         <div class="card-stack">
             <section class="card entry-card card-soft">
                 <div>
-                    <h3>{% if expense_form_mode == "edit" %}Edit Expense{% else %}Add Expense{% endif %}</h3>
+                    <h3>{% if expense_form_mode == "edit" %}{{ t("edit_expense") }}{% else %}{{ t("add_expense") }}{% endif %}</h3>
 
                     {% if expense_error %}
                     <p class="alert alert-error">{{ expense_error }}</p>
                     {% endif %}
-                    {% if role == "viewer" %}
-                    <p class="alert alert-info">Viewer expenses are submitted for admin approval.</p>
+                    {% if demo_mode %}
+                    <p class="alert alert-info">{{ t("demo_readonly_alert") }}</p>
+                    {% elif role == "viewer" %}
+                    <p class="alert alert-info">{{ t("viewer_expense_alert") }}</p>
                     {% endif %}
                     {% if session["status"] == "frozen" %}
-                    <p class="alert alert-info">Session is frozen. Only reimbursements can be marked as done.</p>
+                    <p class="alert alert-info">{{ t("session_frozen_alert") }}</p>
                     {% endif %}
                     {% if session["status"] == "closed" %}
-                    <p class="alert alert-info">Session is closed. All reimbursements are done.</p>
+                    <p class="alert alert-info">{{ t("session_closed_alert") }}</p>
                     {% endif %}
 
-                    {% if participants %}
+                    {% if demo_mode %}
+                    <p class="muted">{{ t("demo_readonly_text") }}</p>
+                    {% elif participants %}
                     <form method="post" action="{% if expense_form_mode == 'edit' %}{{ url_for('update_expense_view', token=token, expense_public_id=editing_expense_id) }}{% else %}{{ url_for('add_expense', token=token) }}{% endif %}">
                         <div class="expense-top-row">
                             <p class="expense-amount-field">
@@ -107,7 +108,7 @@
                                     type="text"
                                     inputmode="decimal"
                                     value="{{ expense_amount }}"
-                                    placeholder="amount"
+                                    placeholder="{{ t('amount_placeholder') }}"
                                     oninput="var cleanedValue = this.value.replace(/[^0-9.,]/g, '').replace(/,/g, '.'); var parts = cleanedValue.split('.'); if (parts.length > 2) { cleanedValue = parts[0] + '.' + parts.slice(1).join(''); } this.value = cleanedValue;"
                                     onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
                                     required
@@ -120,7 +121,7 @@
                                     name="name"
                                     type="text"
                                     value="{{ expense_name }}"
-                                    placeholder="expense name"
+                                    placeholder="{{ t('expense_name_placeholder') }}"
                                     onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
                                     required
                                 >
@@ -128,7 +129,7 @@
                         </div>
 
                         <div>
-                            <label>Concerned participants</label>
+                            <label>{{ t("concerned_participants") }}</label>
                             <div class="concerned-selector">
                                 {% for participant in participants %}
                                 <label>
@@ -144,7 +145,7 @@
                             </div>
                         </div>
 
-                        <p><label>Who paid?</label></p>
+                        <p><label>{{ t("who_paid") }}</label></p>
                         <div class="payer-selector">
                             {% for participant in participants %}
                             <button
@@ -157,7 +158,7 @@
                                 <span class="payer-label">
                                     <span>{{ participant["emoji"] }} {{ participant["name"] }}</span>
                                     {% if expense_form_mode == "edit" and expense_payer == participant['public_id'] %}
-                                    <span class="payer-badge">payer</span>
+                                    <span class="payer-badge">{{ t("payer") }}</span>
                                     {% endif %}
                                 </span>
                             </button>
@@ -165,29 +166,29 @@
                         </div>
                         {% if expense_form_mode == "edit" %}
                         <div class="form-actions" style="margin-top: 10px;">
-                            <a class="button-link button-secondary" href="{{ url_for('session_access', token=token) }}">Cancel</a>
+                            <a class="button-link button-secondary" href="{{ url_for('session_access', token=token) }}">{{ t("cancel") }}</a>
                         </div>
                         {% endif %}
                     </form>
                     {% else %}
-                    <p class="muted">Add at least one participant before creating expenses.</p>
+                    <p class="muted">{{ t("add_at_least_one_participant") }}</p>
                     {% endif %}
                 </div>
             </section>
 
             <section class="card reimbursements-card">
-                <h2>Reimbursements</h2>
+                <h2>{{ t("reimbursements") }}</h2>
                 {% if reimbursements %}
                 <div class="reimbursements-body">
                     {% for reimbursement in reimbursements %}
                     <span class="reimbursement-line">
-                        {{ reimbursement["from_name"] }} pays {{ "%.2f"|format(reimbursement["amount_cents"] / 100) }} to {{ reimbursement["to_name"] }}
+                        {{ reimbursement["from_name"] }} {{ t("pays") }} {{ format_cents(reimbursement["amount_cents"]) }} {{ t("to") }} {{ reimbursement["to_name"] }}
                         {% if session["status"] == "frozen" %}
                         <form method="post" action="{{ url_for('mark_reimbursement_done', token=token) }}">
                             <input type="hidden" name="payer_participant_public_id" value="{{ reimbursement['from_participant_public_id'] }}">
                             <input type="hidden" name="concerned_participant_public_id" value="{{ reimbursement['to_participant_public_id'] }}">
                             <input type="hidden" name="amount_cents" value="{{ reimbursement['amount_cents'] }}">
-                            <button type="submit">Reimbursement done</button>
+                            <button type="submit">{{ t("reimbursement_done") }}</button>
                         </form>
                         {% endif %}
                     </span>
@@ -195,78 +196,146 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="muted">No reimbursements needed.</p>
+                <p class="muted">{{ t("no_reimbursements_needed") }}</p>
                 {% endif %}
             </section>
 
             <section class="card expenses-card">
-                <h2>Expenses</h2>
+                <div class="card-title-row">
+                    <h2>{{ t("expenses") }}</h2>
+                    {% if role == "admin" and session["status"] == "open" and expenses %}
+                    {% if expenses_edit_mode %}
+                    <a class="action-icon-button" href="{{ url_for('session_access', token=token) }}" aria-label="{{ t('cancel_table_edit') }}" title="{{ t('cancel') }}">&#10060;</a>
+                    {% else %}
+                    <a class="action-icon-button" href="{{ url_for('session_access', token=token, edit_expenses=1) }}" aria-label="{{ t('edit_expenses_table') }}" title="{{ t('edit_expenses_table') }}">&#9999;&#65039;</a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% if expenses_table_error %}
+                <p class="alert alert-error">{{ expenses_table_error }}</p>
+                {% endif %}
                 {% if expenses %}
+                {% if expenses_edit_mode %}
+                <form method="post" action="{{ url_for('bulk_update_expenses', token=token) }}">
+                {% endif %}
                 <div class="table-wrap">
-                    <table>
+                    <table class="{% if expenses_edit_mode %}expenses-edit-table{% endif %}">
                         <thead>
                             <tr>
-                                <th>Expense</th>
-                                <th>Amount</th>
-                                <th>Paid by</th>
-                                <th>Status</th>
-                                <th>Submitted by</th>
+                                <th>{{ t("expense") }}</th>
+                                <th>{{ t("amount") }}</th>
+                                <th>{{ t("paid_by") }}</th>
+                                <th>{{ t("status") }}</th>
+                                <th>{{ t("submitted_by") }}</th>
                                 {% for participant in participants %}
                                 <th>{{ participant["emoji"] }} {{ participant["name"] }}</th>
                                 {% endfor %}
-                                <th class="actions-cell">Actions</th>
+                                {% if not expenses_edit_mode and not demo_mode %}
+                                <th class="actions-cell">{{ t("actions") }}</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
                             {% for expense in expenses %}
                             <tr>
-                                <td data-label="Expense">{{ expense["name"] }}</td>
-                                <td data-label="Amount">{{ "%.2f"|format(expense["amount_cents"] / 100) }}</td>
-                                <td data-label="Paid by">{{ expense["payer_display_name"] }}</td>
-                                <td data-label="Status">
+                                <td data-label="{{ t('expense') }}">
+                                    {% if expense["name"].lower() == "reimbursement" %}{{ t("reimbursement_expense") }}{% else %}{{ expense["name"] }}{% endif %}
+                                </td>
+                                <td data-label="{{ t('amount') }}">
+                                    {% if expenses_edit_mode %}
+                                    <input
+                                        class="table-input table-amount-input"
+                                        name="amount_{{ expense['public_id'] }}"
+                                        type="text"
+                                        inputmode="decimal"
+                                        value="{{ "%.2f"|format(expense["amount_cents"] / 100) }}"
+                                        oninput="var cleanedValue = this.value.replace(/[^0-9.,]/g, '').replace(/,/g, '.'); var parts = cleanedValue.split('.'); if (parts.length > 2) { cleanedValue = parts[0] + '.' + parts.slice(1).join(''); } this.value = cleanedValue;"
+                                        required
+                                    >
+                                    {% else %}
+                                    {{ format_cents(expense["amount_cents"]) }}
+                                    {% endif %}
+                                </td>
+                                <td data-label="{{ t('paid_by') }}">
+                                    {% if expenses_edit_mode %}
+                                    <select class="table-select" name="payer_{{ expense['public_id'] }}" required>
+                                        {% for participant in participants %}
+                                        <option value="{{ participant['public_id'] }}" {% if participant["public_id"] == expense["payer_participant_public_id"] %}selected{% endif %}>
+                                            {{ participant["emoji"] }} {{ participant["name"] }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% else %}
+                                    {{ expense["payer_display_name"] }}
+                                    {% endif %}
+                                </td>
+                                <td data-label="{{ t('status') }}">
                                     <span class="badge {% if expense['status'] == 'approved' %}badge-approved{% elif expense['status'] == 'pending' %}badge-pending{% else %}badge-rejected{% endif %}">
-                                        {{ expense["status"] }}
+                                        {{ t(expense["status"]) }}
                                     </span>
                                 </td>
-                                <td data-label="Submitted by">{{ expense["submitted_by_role"] }}</td>
+                                <td data-label="{{ t('submitted_by') }}">{{ t(expense["submitted_by_role"]) }}</td>
                                 {% for participant in participants %}
                                 <td
-                                    class="cell-center participant-expense-cell {% if participant_name_by_public_id[participant['public_id']] in expense['concerned_display_names'] %}is-concerned{% else %}not-concerned{% endif %}"
+                                    class="cell-center participant-expense-cell {% if participant['public_id'] in expense['concerned_participant_public_ids'] %}is-concerned{% else %}not-concerned{% endif %}"
                                     data-label="{{ participant['emoji'] }} {{ participant['name'] }}"
                                 >
-                                    {% if participant_name_by_public_id[participant["public_id"]] in expense["concerned_display_names"] %}&#9989;{% endif %}
+                                    {% if expenses_edit_mode %}
+                                    <input
+                                        class="table-checkbox"
+                                        type="checkbox"
+                                        name="concerned_{{ expense['public_id'] }}"
+                                        value="{{ participant['public_id'] }}"
+                                        {% if participant['public_id'] in expense['concerned_participant_public_ids'] %}checked{% endif %}
+                                    >
+                                    {% elif participant["public_id"] in expense["concerned_participant_public_ids"] %}
+                                    &#9989;
+                                    {% endif %}
                                 </td>
                                 {% endfor %}
-                                <td class="actions-cell" data-label="Actions">
+                                {% if not expenses_edit_mode and not demo_mode %}
+                                <td class="actions-cell" data-label="{{ t('actions') }}">
                                     <div class="inline-actions">
                                         {% if role == "admin" or expense["submitted_by_role"] == "viewer" %}
-                                        <a class="button-link button-secondary" href="{{ url_for('edit_expense', token=token, expense_public_id=expense['public_id']) }}">Edit</a>
+                                        <a class="action-icon-button" href="{{ url_for('edit_expense', token=token, expense_public_id=expense['public_id']) }}" aria-label="{{ t('edit_expense') }}" title="{{ t('edit') }}">&#9999;&#65039;</a>
+                                        <form method="post" action="{{ url_for('duplicate_expense', token=token, expense_public_id=expense['public_id']) }}">
+                                            <button class="action-icon-button" type="submit" aria-label="{{ t('duplicate_expense') }}" title="{{ t('duplicate') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128203;</button>
+                                        </form>
                                         {% endif %}
                                         {% if role == "admin" %}
                                         <form method="post" action="{{ url_for('delete_expense_view', token=token, expense_public_id=expense['public_id']) }}">
-                                            <button class="button-danger" type="submit" {% if session["status"] != "open" %}disabled{% endif %}>Delete</button>
+                                            <button class="action-icon-button action-icon-danger" type="submit" aria-label="{{ t('delete_expense') }}" title="{{ t('delete') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
                                         </form>
                                         {% if expense["status"] == "pending" %}
                                         <form method="post" action="{{ url_for('approve_expense', token=token, expense_public_id=expense['public_id']) }}">
-                                            <button type="submit" {% if session["status"] != "open" %}disabled{% endif %}>Approve</button>
+                                            <button type="submit" {% if session["status"] != "open" %}disabled{% endif %}>{{ t("approve") }}</button>
                                         </form>
                                         <form method="post" action="{{ url_for('reject_expense', token=token, expense_public_id=expense['public_id']) }}">
-                                            <button class="button-danger" type="submit" {% if session["status"] != "open" %}disabled{% endif %}>Reject</button>
+                                            <button class="button-danger" type="submit" {% if session["status"] != "open" %}disabled{% endif %}>{{ t("reject") }}</button>
                                         </form>
                                         {% endif %}
                                         {% endif %}
                                     </div>
                                 </td>
+                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                {% if expenses_edit_mode %}
+                    <div class="form-actions table-edit-actions">
+                        <button type="submit">{{ t("save_expenses") }}</button>
+                        <a class="button-link button-secondary" href="{{ url_for('session_access', token=token) }}">{{ t("cancel") }}</a>
+                    </div>
+                </form>
+                {% endif %}
                 {% else %}
-                <p class="muted">No expenses yet.</p>
+                <p class="muted">{{ t("no_expenses_yet") }}</p>
                 {% endif %}
             </section>
         </div>
+        {% include "footer.html" %}
     </div>
 </body>
 </html>

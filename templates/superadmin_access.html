@@ -1,20 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Superadmin Access</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>{{ t("superadmin_access") }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_version) }}">
 </head>
 <body>
     <div class="page-shell">
         <section class="overview-card">
-            <h1>{% if setup_mode %}Set Superadmin Password{% else %}Superadmin Access{% endif %}</h1>
+            <h1>{% if setup_mode %}{{ t("set_superadmin_password") }}{% else %}{{ t("superadmin_access") }}{% endif %}</h1>
             <p class="muted">
                 {% if setup_mode %}
-                This password will protect access to the global session list.
+                {{ t("superadmin_setup_help") }}
                 {% else %}
-                Enter the shared password to open the superadmin page.
+                {{ t("superadmin_access_help") }}
                 {% endif %}
             </p>
         </section>
@@ -26,22 +26,23 @@
 
             <form method="post" action="{{ url_for('superadmin_access') }}">
                 <p>
-                    <label for="password">Password</label><br>
+                    <label for="password">{{ t("password") }}</label><br>
                     <input id="password" name="password" type="password" required>
                 </p>
                 {% if setup_mode %}
                 <p>
-                    <label for="confirm_password">Confirm password</label><br>
+                    <label for="confirm_password">{{ t("confirm_password") }}</label><br>
                     <input id="confirm_password" name="confirm_password" type="password" required>
                 </p>
                 {% endif %}
                 <div class="form-actions">
                     <button type="submit">
-                        {% if setup_mode %}Save password{% else %}Open superadmin page{% endif %}
+                        {% if setup_mode %}{{ t("save_password") }}{% else %}{{ t("open_superadmin_page") }}{% endif %}
                     </button>
                 </div>
             </form>
         </section>
+        {% include "footer.html" %}
     </div>
 </body>
 </html>

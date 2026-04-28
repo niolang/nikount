@@ -60,6 +60,57 @@ a:hover {
     margin-bottom: 18px;
 }
 
+.index-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 280px);
+    gap: 20px;
+    align-items: center;
+    background:
+        linear-gradient(135deg, rgba(31, 122, 109, 0.14), transparent 42%),
+        linear-gradient(160deg, #fff9f0 0%, #eef7f5 48%, #fff3de 100%);
+}
+
+.hero-kicker {
+    margin: 0 0 8px;
+    color: var(--primary-strong);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.index-hero h1 {
+    margin-bottom: 8px;
+    font-size: clamp(2.3rem, 7vw, 4.2rem);
+}
+
+.hero-copy {
+    max-width: 660px;
+    margin-bottom: 18px;
+    color: var(--muted);
+    font-size: 1.05rem;
+}
+
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.hero-stat-card {
+    display: grid;
+    gap: 6px;
+    padding: 16px;
+    border: 1px solid rgba(31, 122, 109, 0.18);
+    border-radius: 16px;
+    background: rgba(255, 253, 249, 0.82);
+    box-shadow: 0 12px 28px rgba(31, 122, 109, 0.1);
+}
+
+.hero-stat-card strong {
+    font-size: 1.7rem;
+}
+
 .overview-section {
     margin-top: 18px;
 }
@@ -92,8 +143,70 @@ a:hover {
     padding: 18px;
 }
 
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.card-title-row h2 {
+    margin-bottom: 0;
+}
+
 .card-soft {
     background: var(--surface-strong);
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.feature-card {
+    min-height: 150px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.feature-card strong {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.feature-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.feature-card-green {
+    background: #edf8f3;
+    border-color: #c7e5d8;
+}
+
+.feature-card-blue {
+    background: #edf4ff;
+    border-color: #c9d9ef;
+}
+
+.feature-card-yellow {
+    background: #fff7df;
+    border-color: #ecd99d;
+}
+
+.feature-card-red {
+    background: #fff0ed;
+    border-color: #ecc6bd;
+}
+
+.index-create-card {
+    border-color: rgba(31, 122, 109, 0.22);
 }
 
 .meta-list {
@@ -116,6 +229,13 @@ a:hover {
     letter-spacing: 0.05em;
     color: var(--muted);
     margin-bottom: 4px;
+}
+
+.meta-secondary {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--muted);
+    font-size: 0.9rem;
 }
 
 .badge {
@@ -149,6 +269,29 @@ a:hover {
     color: #8a6511;
 }
 
+.status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.status-action-form {
+    display: inline-flex;
+}
+
+button.status-action-button {
+    min-height: auto;
+    width: auto;
+    border: 1px solid currentColor;
+    cursor: pointer;
+}
+
+button.status-action-button:hover {
+    background: var(--primary);
+    color: white;
+}
+
 .session-actions,
 .form-actions,
 .inline-actions,
@@ -157,6 +300,10 @@ a:hover {
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
+}
+
+.actions-cell .inline-actions {
+    gap: 2px;
 }
 
 form {
@@ -169,7 +316,8 @@ legend {
 }
 
 input,
-button {
+button,
+select {
     font: inherit;
 }
 
@@ -182,6 +330,17 @@ input[type="number"] {
     background: #fffdf9;
     color: var(--text);
     padding: 12px 14px;
+}
+
+select,
+.table-input,
+.table-select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fffdf9;
+    color: var(--text);
+    padding: 8px 10px;
 }
 
 .concerned-selector {
@@ -262,6 +421,40 @@ button:disabled {
 
 .button-danger:hover {
     background: var(--danger-strong);
+}
+
+.action-icon-button,
+button.action-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 2px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    font-size: 1rem;
+    text-decoration: none;
+}
+
+.action-icon-button:hover,
+button.action-icon-button:hover {
+    background: rgba(31, 122, 109, 0.1);
+    color: var(--primary-strong);
+    text-decoration: none;
+}
+
+.action-icon-danger {
+    color: var(--danger);
+}
+
+.action-icon-danger:hover,
+button.action-icon-danger:hover {
+    background: rgba(169, 68, 56, 0.1);
+    color: var(--danger-strong);
 }
 
 .payer-original {
@@ -373,6 +566,19 @@ button:disabled {
     color: var(--muted);
 }
 
+.table-amount-input {
+    max-width: 96px;
+}
+
+.table-checkbox {
+    width: 18px;
+    height: 18px;
+}
+
+.table-edit-actions {
+    margin-top: 12px;
+}
+
 .reimbursements-body {
     padding: 14px 16px;
     border: 1px solid var(--line);
@@ -439,6 +645,30 @@ tbody tr:nth-child(even) {
     overflow-wrap: anywhere;
 }
 
+.app-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 22px;
+    padding: 14px 16px;
+    background: var(--bg-soft);
+    box-shadow: none;
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
+.app-footer p {
+    margin: 0;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 @media (max-width: 900px) {
     .page-shell {
         width: min(100% - 18px, 1180px);
@@ -447,6 +677,11 @@ tbody tr:nth-child(even) {
     .card,
     .overview-card {
         padding: 16px;
+    }
+
+    .index-hero,
+    .feature-grid {
+        grid-template-columns: 1fr 1fr;
     }
 
 }
@@ -473,8 +708,40 @@ tbody tr:nth-child(even) {
         margin-bottom: 10px;
     }
 
+    .index-hero,
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .index-hero h1 {
+        font-size: 2.4rem;
+    }
+
+    .hero-copy {
+        font-size: 1rem;
+    }
+
+    .hero-stat-card {
+        padding: 12px;
+    }
+
+    .feature-grid {
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .feature-card {
+        min-height: auto;
+        padding: 14px;
+        border-radius: 14px;
+    }
+
     .overview-card h1 {
         font-size: 1.45rem;
+    }
+
+    .index-hero h1 {
+        font-size: 2.4rem;
     }
 
     .card h2,
@@ -502,6 +769,13 @@ tbody tr:nth-child(even) {
         margin-bottom: 3px;
     }
 
+    .meta-secondary {
+        display: block;
+        margin-left: 0;
+        margin-top: 2px;
+        font-size: 0.82rem;
+    }
+
     .overview-section,
     .overview-subsection {
         margin-top: 12px;
@@ -525,7 +799,10 @@ tbody tr:nth-child(even) {
 
     input[type="text"],
     input[type="password"],
-    input[type="number"] {
+    input[type="number"],
+    select,
+    .table-input,
+    .table-select {
         border-radius: 10px;
         padding: 11px 12px;
     }
@@ -574,6 +851,14 @@ tbody tr:nth-child(even) {
         border-radius: 10px;
     }
 
+    .action-icon-button,
+    button.action-icon-button {
+        width: 34px;
+        min-width: 34px;
+        height: 34px;
+        min-height: 34px;
+    }
+
     .payer-label {
         justify-content: center;
         width: 100%;
@@ -592,17 +877,19 @@ tbody tr:nth-child(even) {
     }
 
     .reimbursement-line {
-        display: block;
-        margin-bottom: 8px;
-    }
-
-    .reimbursement-line:last-child {
-        margin-bottom: 0;
+        display: inline;
     }
 
     .reimbursement-line form {
-        display: block;
-        margin: 6px 0 0;
+        display: inline-flex;
+        margin: 0 0 0 6px;
+        vertical-align: middle;
+    }
+
+    .reimbursement-line button {
+        width: auto;
+        min-height: 34px;
+        padding: 6px 10px;
     }
 
     .table-wrap {
@@ -671,18 +958,38 @@ tbody tr:nth-child(even) {
         display: none;
     }
 
+    .expenses-edit-table .participant-expense-cell.not-concerned {
+        display: grid;
+    }
+
+    .table-amount-input {
+        max-width: none;
+    }
+
     .actions-cell {
         min-width: 0;
     }
 
     .actions-cell .inline-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px;
     }
 
     .actions-cell .inline-actions form {
-        width: 100%;
+        width: auto;
+    }
+
+    .app-footer {
+        display: grid;
+        gap: 8px;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .footer-links {
+        justify-content: center;
     }
 }
 
@@ -696,6 +1003,6 @@ tbody tr:nth-child(even) {
     }
 
     .actions-cell .inline-actions {
-        grid-template-columns: 1fr;
+        display: flex;
     }
 }

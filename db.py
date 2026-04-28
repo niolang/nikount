@@ -63,10 +63,54 @@ def init_db():
         schema_path = BASE_DIR / "schema.sql"
         with open(schema_path, "r", encoding="utf-8") as schema_file:
             connection.executescript(schema_file.read())
+        remove_session_description_column(connection)
         ensure_unique_participant_emojis(connection)
         connection.commit()
     finally:
         connection.close()
+
+
+def get_table_columns(connection, table_name):
+    rows = connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return [row[1] for row in rows]
+
+
+def remove_session_description_column(connection):
+    if "description" not in get_table_columns(connection, "sessions"):
+        return
+
+    connection.executescript(
+        """
+        CREATE TABLE sessions_without_description (
+            public_id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('open', 'frozen', 'closed')),
+            admin_token TEXT NOT NULL UNIQUE,
+            viewer_token TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        INSERT INTO sessions_without_description (
+            public_id,
+            title,
+            status,
+            admin_token,
+            viewer_token,
+            created_at
+        )
+        SELECT
+            public_id,
+            title,
+            status,
+            admin_token,
+            viewer_token,
+            created_at
+        FROM sessions;
+
+        DROP TABLE sessions;
+        ALTER TABLE sessions_without_description RENAME TO sessions;
+        """
+    )
 
 
 def generate_public_id():
@@ -234,12 +278,12 @@ def list_sessions():
     try:
         return connection.execute(
             """
-            SELECT s.public_id, s.title, s.description, s.status,
+            SELECT s.public_id, s.title, s.status,
                    s.admin_token, s.viewer_token, s.created_at,
                    COALESCE(SUM(CASE WHEN e.status != 'rejected' THEN e.amount_cents ELSE 0 END), 0) AS total_amount_cents
             FROM sessions s
             LEFT JOIN expenses e ON e.session_public_id = s.public_id
-            GROUP BY s.public_id, s.title, s.description, s.status,
+            GROUP BY s.public_id, s.title, s.status,
                      s.admin_token, s.viewer_token, s.created_at
             ORDER BY s.created_at DESC, s.title ASC
             """
@@ -289,7 +333,7 @@ def delete_session(session_public_id):
         connection.close()
 
 
-def insert_session(title, description):
+def insert_session(title):
     session_public_id = generate_public_id()
     admin_token = generate_token()
     viewer_token = generate_token()
@@ -301,17 +345,15 @@ def insert_session(title, description):
             INSERT INTO sessions (
                 public_id,
                 title,
-                description,
                 status,
                 admin_token,
                 viewer_token
             )
-            VALUES (?, ?, ?, 'open', ?, ?)
+            VALUES (?, ?, 'open', ?, ?)
             """,
             (
                 session_public_id,
                 title,
-                description,
                 admin_token,
                 viewer_token,
             ),
@@ -329,8 +371,7 @@ def get_session_by_public_id(session_public_id):
     try:
         row = connection.execute(
             """
-            SELECT public_id, title, description, status, admin_token, viewer_token,
-                   created_at
+            SELECT public_id, title, status, admin_token, viewer_token, created_at
             FROM sessions
             WHERE public_id = ?
             """,
@@ -347,8 +388,7 @@ def get_session_by_token(token):
     try:
         session = connection.execute(
             """
-            SELECT public_id, title, description, status, admin_token, viewer_token,
-                   created_at
+            SELECT public_id, title, status, admin_token, viewer_token, created_at
             FROM sessions
             WHERE admin_token = ? OR viewer_token = ?
             """,
@@ -571,7 +611,8 @@ def list_expenses(session_public_id):
             """
             SELECT e.public_id, e.name, e.amount_cents, e.status,
                    e.created_at, e.submitted_by_role, payer.name AS payer_name,
-                   payer.emoji AS payer_emoji
+                   payer.emoji AS payer_emoji,
+                   e.payer_participant_public_id
             FROM expenses e
             LEFT JOIN participants payer
                 ON payer.public_id = e.payer_participant_public_id
@@ -583,7 +624,7 @@ def list_expenses(session_public_id):
 
         concerned_rows = connection.execute(
             """
-            SELECT ep.expense_public_id, p.name, p.emoji
+            SELECT ep.expense_public_id, ep.participant_public_id, p.name, p.emoji
             FROM expense_participants ep
             JOIN participants p ON p.public_id = ep.participant_public_id
             JOIN expenses e ON e.public_id = ep.expense_public_id
@@ -599,6 +640,7 @@ def list_expenses(session_public_id):
     for row in concerned_rows:
         concerned_by_expense.setdefault(row["expense_public_id"], []).append(
             {
+                "participant_public_id": row["participant_public_id"],
                 "name": row["name"],
                 "emoji": row["emoji"],
             }
@@ -614,9 +656,14 @@ def list_expenses(session_public_id):
                 "status": row["status"],
                 "created_at": row["created_at"],
                 "submitted_by_role": row["submitted_by_role"],
+                "payer_participant_public_id": row["payer_participant_public_id"],
                 "payer_name": row["payer_name"],
                 "payer_emoji": row["payer_emoji"],
                 "concerned_names": concerned_by_expense.get(row["public_id"], []),
+                "concerned_participant_public_ids": [
+                    item["participant_public_id"]
+                    for item in concerned_by_expense.get(row["public_id"], [])
+                ],
             }
         )
 

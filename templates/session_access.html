@@ -42,11 +42,11 @@
                 <div class="balance-visualization">
                     {% if balance_visualization["has_segments"] %}
                     {% if balance_visualization["debtors"] %}
-                    <div class="balance-bar {% if balance_visualization['debtors']|length is odd %}balance-bar-odd{% endif %}">
+                    <div class="balance-bar">
                         {% for segment in balance_visualization["debtors"] %}
                         <div
                             class="balance-segment balance-segment-negative"
-                            style="--segment-width: {{ segment['width_percent'] }}%; width: {{ segment['width_percent'] }}%;"
+                            style="--segment-weight: {{ segment['width_percent'] }};"
                             title="{{ segment['emoji'] }} {{ segment['name'] }} {{ segment['amount_text'] }}"
                         >
                             <span class="balance-segment-info">
@@ -64,11 +64,11 @@
                     {% endif %}
 
                     {% if balance_visualization["creditors"] %}
-                    <div class="balance-bar {% if balance_visualization['creditors']|length is odd %}balance-bar-odd{% endif %}">
+                    <div class="balance-bar">
                         {% for segment in balance_visualization["creditors"] %}
                         <div
                             class="balance-segment balance-segment-positive"
-                            style="--segment-width: {{ segment['width_percent'] }}%; width: {{ segment['width_percent'] }}%;"
+                            style="--segment-weight: {{ segment['width_percent'] }};"
                             title="{{ segment['emoji'] }} {{ segment['name'] }} {{ segment['amount_text'] }}"
                         >
                             <span class="balance-segment-info">

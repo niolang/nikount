@@ -523,10 +523,6 @@ def build_balance_visualization(participant_balances):
         for participant in participant_balances
         if participant["balance_cents"] == 0
     ]
-    total_debt_cents = sum(abs(participant["balance_cents"]) for participant in debtors)
-    total_credit_cents = sum(
-        participant["balance_cents"] for participant in creditors
-    )
 
     def build_segment(participant, total_cents):
         amount_cents = abs(participant["balance_cents"])
@@ -538,9 +534,17 @@ def build_balance_visualization(participant_balances):
             "public_id": participant["public_id"],
             "name": participant["name"],
             "emoji": participant["emoji"],
+            "amount_cents": amount_cents,
             "amount_text": format_signed_cents(participant["balance_cents"]),
             "width_percent": width_percent,
         }
+
+    def build_segments(participants):
+        total_cents = sum(abs(participant["balance_cents"]) for participant in participants)
+        return [
+            build_segment(participant, total_cents)
+            for participant in participants
+        ]
 
     def build_neutral_participant(participant):
         return {
@@ -551,13 +555,8 @@ def build_balance_visualization(participant_balances):
         }
 
     return {
-        "debtors": [
-            build_segment(participant, total_debt_cents) for participant in debtors
-        ],
-        "creditors": [
-            build_segment(participant, total_credit_cents)
-            for participant in creditors
-        ],
+        "debtors": build_segments(debtors),
+        "creditors": build_segments(creditors),
         "neutral_participants": [
             build_neutral_participant(participant)
             for participant in neutral_participants

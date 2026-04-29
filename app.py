@@ -127,6 +127,7 @@ TRANSLATIONS = {
         "paid_by": "Paid by",
         "participant": "participant",
         "participants": "Participants",
+        "balance_settled": "All balances are settled.",
         "password": "Password",
         "pays": "pays",
         "pending": "pending",
@@ -259,6 +260,7 @@ TRANSLATIONS = {
         "paid_by": "Payé par",
         "participant": "participant",
         "participants": "Participants",
+        "balance_settled": "Tous les comptes sont équilibrés.",
         "password": "Mot de passe",
         "pays": "paie",
         "pending": "en attente",
@@ -505,6 +507,82 @@ def compute_participant_balances(participants, expenses):
     return participant_balances
 
 
+def build_balance_visualization(participant_balances):
+    debtors = [
+        participant
+        for participant in participant_balances
+        if participant["balance_cents"] < 0
+    ]
+    creditors = [
+        participant
+        for participant in participant_balances
+        if participant["balance_cents"] > 0
+    ]
+    neutral_participants = [
+        participant
+        for participant in participant_balances
+        if participant["balance_cents"] == 0
+    ]
+    total_debt_cents = sum(abs(participant["balance_cents"]) for participant in debtors)
+    total_credit_cents = sum(
+        participant["balance_cents"] for participant in creditors
+    )
+
+    def build_segment(participant, total_cents):
+        amount_cents = abs(participant["balance_cents"])
+        width_percent = 0
+        if total_cents:
+            width_percent = round(amount_cents * 100 / total_cents, 2)
+
+        return {
+            "public_id": participant["public_id"],
+            "name": participant["name"],
+            "emoji": participant["emoji"],
+            "amount_text": format_signed_cents(participant["balance_cents"]),
+            "width_percent": width_percent,
+        }
+
+    def build_neutral_participant(participant):
+        return {
+            "public_id": participant["public_id"],
+            "name": participant["name"],
+            "emoji": participant["emoji"],
+            "amount_text": participant["balance_text"],
+        }
+
+    return {
+        "debtors": [
+            build_segment(participant, total_debt_cents) for participant in debtors
+        ],
+        "creditors": [
+            build_segment(participant, total_credit_cents)
+            for participant in creditors
+        ],
+        "neutral_participants": [
+            build_neutral_participant(participant)
+            for participant in neutral_participants
+        ],
+        "has_segments": bool(debtors or creditors),
+    }
+
+
+def build_expenses_for_balances(expenses):
+    balance_expenses = []
+    for expense in expenses:
+        if expense["status"] != "approved":
+            continue
+
+        balance_expenses.append(
+            {
+                "amount_cents": expense["amount_cents"],
+                "payer_participant_public_id": expense["payer_participant_public_id"],
+                "concerned_participants": expense["concerned_names"],
+            }
+        )
+
+    return balance_expenses
+
+
 def format_cents(amount_cents):
     euros = amount_cents // 100
     cents = amount_cents % 100
@@ -606,7 +684,10 @@ def is_valid_participant_name(name):
 def can_edit_expense(role, expense):
     if role == "admin":
         return True
-    return expense["submitted_by_role"] == "viewer"
+    return (
+        expense["submitted_by_role"] == "viewer"
+        and expense["status"] != "approved"
+    )
 
 
 def get_superadmin_password_hash():
@@ -672,9 +753,11 @@ def render_session_page(
         session["public_id"]
     )
     reimbursements = compute_reimbursements(approved_participants, approved_expenses)
+    balance_expenses = build_expenses_for_balances(expenses)
     overview_participants = compute_participant_balances(
-        approved_participants, approved_expenses
+        participants, balance_expenses
     )
+    balance_visualization = build_balance_visualization(overview_participants)
     participant_name_by_public_id = {
         participant["public_id"]: participant_label(
             participant["name"], record_value(participant, "emoji")
@@ -720,6 +803,7 @@ def render_session_page(
         participants=participants,
         participant_name_by_public_id=participant_name_by_public_id,
         overview_participants=overview_participants,
+        balance_visualization=balance_visualization,
         expenses=display_expenses,
         reimbursements=reimbursements,
         participant_error=participant_error,
@@ -841,6 +925,7 @@ def build_demo_page_data():
 
     session_total_cents = sum(expense["amount_cents"] for expense in demo_expenses)
     session_average_cents = round(session_total_cents / len(participants))
+    overview_participants = compute_participant_balances(participants, approved_expenses)
     return {
         "session": {
             "title": translate("demo_session_title"),
@@ -855,9 +940,8 @@ def build_demo_page_data():
             )
             for participant in participants
         },
-        "overview_participants": compute_participant_balances(
-            participants, approved_expenses
-        ),
+        "overview_participants": overview_participants,
+        "balance_visualization": build_balance_visualization(overview_participants),
         "expenses": display_expenses,
         "reimbursements": compute_reimbursements(participants, approved_expenses),
         "participant_error": None,
@@ -1654,7 +1738,7 @@ def reopen_session(token):
         abort(404)
     if role != "admin":
         abort(403)
-    if session["status"] != "frozen":
+    if session["status"] not in {"frozen", "closed"}:
         abort(403)
 
     update_session_status(session["public_id"], "open")

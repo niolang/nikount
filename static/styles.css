@@ -553,44 +553,164 @@ button.action-icon-approve:hover {
     border: 1px solid rgba(31, 122, 109, 0.18);
 }
 
-.participants-row {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.balance-visualization {
     display: grid;
-    gap: 10px;
+    gap: 8px;
+    margin-top: 8px;
 }
 
-.participants-row {
+.balance-bar {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 4px;
+    min-width: 0;
+    min-height: 38px;
+    padding: 4px;
+    overflow: visible;
+    border: 1px solid rgba(220, 207, 190, 0.78);
+    border-radius: 16px;
+    background: rgba(255, 250, 243, 0.86);
 }
 
-.participant-chip {
+.balance-segment {
+    position: relative;
+    display: inline-flex;
+    flex: 1 1 max(150px, var(--segment-width, 0%));
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: auto !important;
+    min-width: 150px;
+    padding: 7px 30px 7px 8px;
+    border-radius: 12px;
+    color: #fffdf9;
+    font-size: 0.82rem;
+    line-height: 1.1;
+    overflow: hidden;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.balance-segment + .balance-segment {
+    border-left: 0;
+}
+
+.balance-bar-odd .balance-segment:first-child {
+    flex-basis: 100%;
+}
+
+.balance-segment-info {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: #fffaf3;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
 }
 
-.participant-balance {
+.balance-segment-info span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.balance-segment-info strong {
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+}
+
+.balance-segment-negative {
+    background: linear-gradient(135deg, #c74b3f, var(--danger));
+}
+
+.balance-segment-positive {
+    background: linear-gradient(135deg, #2c987f, var(--primary));
+}
+
+.balance-delete-form,
+.balance-neutral-participant form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.balance-delete-form {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+}
+
+.balance-delete-button {
+    min-width: 22px;
+    width: 22px;
+    min-height: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: none;
+    color: #fffdf9;
+    font-size: 0.82rem;
+    line-height: 1;
+}
+
+.balance-delete-button:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.balance-delete-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.balance-settled {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 9px 12px;
+    border: 1px solid rgba(31, 122, 109, 0.18);
+    border-radius: 999px;
+    background: rgba(31, 122, 109, 0.08);
+    color: var(--primary-strong);
+    font-size: 0.88rem;
     font-weight: 700;
 }
 
-.participant-chip.balance-negative {
+.balance-neutral-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+    gap: 8px;
+}
+
+.balance-neutral-participant {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fffaf3;
+    color: var(--muted);
+    font-size: 0.84rem;
+}
+
+.balance-neutral-participant strong {
+    font-size: 0.78rem;
+}
+
+.balance-delete-button-neutral {
+    background: transparent;
     color: var(--danger);
 }
 
-.participant-chip.balance-positive {
-    color: var(--primary);
-}
-
-.participant-chip.balance-neutral {
-    color: var(--muted);
+.balance-delete-button-neutral:hover {
+    background: transparent;
+    color: var(--danger-strong);
 }
 
 .icon-button {
@@ -882,14 +1002,41 @@ tbody tr:nth-child(even) {
         margin-top: 12px;
     }
 
-    .participant-chip {
-        justify-content: center;
-        border-radius: 12px;
-        padding: 9px 10px;
+    .balance-visualization {
+        gap: 7px;
+        margin-top: 10px;
     }
 
-    .participant-chip form {
-        margin-left: 2px;
+    .balance-bar {
+        min-height: 34px;
+        border-radius: 14px;
+    }
+
+    .balance-segment {
+        flex-basis: max(116px, var(--segment-width, 0%));
+        min-width: 116px;
+    }
+
+    .balance-segment {
+        padding: 6px 26px 6px 5px;
+        font-size: 0.72rem;
+    }
+
+    .balance-segment-info {
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .balance-segment-info strong {
+        font-size: 0.7rem;
+    }
+
+    .balance-delete-button {
+        width: 20px;
+        min-width: 20px;
+        height: 20px;
+        min-height: 20px;
+        font-size: 0.74rem;
     }
 
     .icon-button {
@@ -959,6 +1106,15 @@ tbody tr:nth-child(even) {
         min-width: 34px;
         height: 34px;
         min-height: 34px;
+    }
+
+    .balance-delete-form .balance-delete-button,
+    .balance-neutral-participant .balance-delete-button {
+        width: 20px;
+        min-width: 20px;
+        height: 20px;
+        min-height: 20px;
+        border-radius: 999px;
     }
 
     .payer-label {

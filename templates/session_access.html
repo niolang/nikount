@@ -22,9 +22,9 @@
                         <form class="status-action-form" method="post" action="{{ url_for('close_session', token=token) }}">
                             <button class="status-action-button badge badge-open" type="submit">{{ t("freeze") }}</button>
                         </form>
-                        {% elif role == "admin" and session["status"] == "frozen" %}
+                        {% elif role == "admin" and session["status"] in ["frozen", "closed"] %}
                         <form class="status-action-form" method="post" action="{{ url_for('reopen_session', token=token) }}">
-                            <button class="status-action-button badge badge-frozen" type="submit">{{ t("reopen") }}</button>
+                            <button class="status-action-button badge {% if session['status'] == 'closed' %}badge-closed{% else %}badge-frozen{% endif %}" type="submit">{{ t("reopen") }}</button>
                         </form>
                         {% endif %}
                     </div>
@@ -39,19 +39,71 @@
             <div class="overview-section">
                 <h2>{{ t("participants") }}</h2>
                 {% if overview_participants %}
-                <ul class="participants-row">
-                    {% for participant in overview_participants %}
-                    <li class="participant-chip {{ participant['balance_class'] }}">
-                        <span>{{ participant["emoji"] }} {{ participant["name"] }}</span>
-                        <span class="participant-balance">{{ participant["balance_text"] }}</span>
-                        {% if role == "admin" %}
-                        <form method="post" action="{{ url_for('remove_participant', token=token, participant_public_id=participant['public_id']) }}">
-                            <button class="icon-button" type="submit" aria-label="{{ t('remove_participant') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
-                        </form>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
+                <div class="balance-visualization">
+                    {% if balance_visualization["has_segments"] %}
+                    {% if balance_visualization["debtors"] %}
+                    <div class="balance-bar {% if balance_visualization['debtors']|length is odd %}balance-bar-odd{% endif %}">
+                        {% for segment in balance_visualization["debtors"] %}
+                        <div
+                            class="balance-segment balance-segment-negative"
+                            style="--segment-width: {{ segment['width_percent'] }}%; width: {{ segment['width_percent'] }}%;"
+                            title="{{ segment['emoji'] }} {{ segment['name'] }} {{ segment['amount_text'] }}"
+                        >
+                            <span class="balance-segment-info">
+                                <span>{{ segment["emoji"] }} {{ segment["name"] }}</span>
+                                <strong>{{ segment["amount_text"] }}</strong>
+                            </span>
+                            {% if role == "admin" %}
+                            <form class="balance-delete-form" method="post" action="{{ url_for('remove_participant', token=token, participant_public_id=segment['public_id']) }}">
+                                <button class="balance-delete-button" type="submit" aria-label="{{ t('remove_participant') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if balance_visualization["creditors"] %}
+                    <div class="balance-bar {% if balance_visualization['creditors']|length is odd %}balance-bar-odd{% endif %}">
+                        {% for segment in balance_visualization["creditors"] %}
+                        <div
+                            class="balance-segment balance-segment-positive"
+                            style="--segment-width: {{ segment['width_percent'] }}%; width: {{ segment['width_percent'] }}%;"
+                            title="{{ segment['emoji'] }} {{ segment['name'] }} {{ segment['amount_text'] }}"
+                        >
+                            <span class="balance-segment-info">
+                                <span>{{ segment["emoji"] }} {{ segment["name"] }}</span>
+                                <strong>{{ segment["amount_text"] }}</strong>
+                            </span>
+                            {% if role == "admin" %}
+                            <form class="balance-delete-form" method="post" action="{{ url_for('remove_participant', token=token, participant_public_id=segment['public_id']) }}">
+                                <button class="balance-delete-button" type="submit" aria-label="{{ t('remove_participant') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <p class="balance-settled">{{ t("balance_settled") }}</p>
+                    {% endif %}
+
+                    {% if balance_visualization["neutral_participants"] %}
+                    <div class="balance-neutral-list">
+                        {% for segment in balance_visualization["neutral_participants"] %}
+                        <div class="balance-neutral-participant">
+                            <span>{{ segment["emoji"] }} {{ segment["name"] }}</span>
+                            <strong>{{ segment["amount_text"] }}</strong>
+                            {% if role == "admin" %}
+                            <form method="post" action="{{ url_for('remove_participant', token=token, participant_public_id=segment['public_id']) }}">
+                                <button class="balance-delete-button balance-delete-button-neutral" type="submit" aria-label="{{ t('remove_participant') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
                 {% else %}
                 <p class="muted">{{ t("no_participants_yet") }}</p>
                 {% endif %}
@@ -341,7 +393,7 @@
                                             <span class="action-status-icon" aria-label="{{ t(expense['status']) }}" title="{{ t(expense['status']) }}">&#9744;&#65039;</span>
                                             {% endif %}
                                         {% endif %}
-                                        {% if role == "admin" or expense["submitted_by_role"] == "viewer" %}
+                                        {% if role == "admin" or (expense["submitted_by_role"] == "viewer" and expense["status"] != "approved") %}
                                         <a class="action-icon-button" href="{{ url_for('edit_expense', token=token, expense_public_id=expense['public_id']) }}" aria-label="{{ t('edit_expense') }}" title="{{ t('edit') }}">&#9999;&#65039;</a>
                                         <form method="post" action="{{ url_for('duplicate_expense', token=token, expense_public_id=expense['public_id']) }}">
                                             <button class="action-icon-button" type="submit" aria-label="{{ t('duplicate_expense') }}" title="{{ t('duplicate') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128203;</button>

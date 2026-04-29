@@ -1,5 +1,6 @@
 import os
 import unicodedata
+from datetime import date, datetime
 
 from flask import (
     Flask,
@@ -75,6 +76,8 @@ TRANSLATIONS = {
         "create_session_password_help": "Enter the creation password to open the session setup page.",
         "created_at": "Created at",
         "creation_password": "Creation password",
+        "date": "Date",
+        "date_placeholder": "DD/MM/YYYY",
         "delete": "Delete",
         "delete_expense": "Delete expense",
         "delete_session_password_placeholder": "Type password then Enter",
@@ -111,6 +114,7 @@ TRANSLATIONS = {
         "hero_friends": "4 friends",
         "hero_kicker": "Weekends, trips, temporary shared places",
         "hero_weekend": "1 weekend",
+        "home": "Home",
         "index_title": "Nikount",
         "new_creation_password": "New creation password",
         "new_session": "New session",
@@ -152,6 +156,7 @@ TRANSLATIONS = {
         "superadmin_setup_help": "This password will protect access to the global session list.",
         "title": "Title",
         "to": "to",
+        "toggle_participants": "Check/uncheck all participants",
         "total_amount": "Total amount",
         "unknown": "Unknown",
         "use_semicolon_placeholder": "Use \";\" to add multiple participants at once",
@@ -162,7 +167,9 @@ TRANSLATIONS = {
         "payer": "payer",
         "error_amount_invalid": "Amount must be a valid positive number.",
         "error_concerned_required": "Select at least one concerned participant.",
+        "error_date_invalid": "Date must use DD/MM/YYYY.",
         "error_expense_name_required": "Expense name is required.",
+        "error_invalid_date_for": "Invalid date for {expense_name}.",
         "error_invalid_amount_for": "Invalid amount for {expense_name}.",
         "error_participant_cannot_remove": "{participant_name} cannot be removed because this participant is already used in one or more expenses.",
         "error_participant_name_required": "Participant name is required.",
@@ -201,6 +208,8 @@ TRANSLATIONS = {
         "create_session_password_help": "Entrez le mot de passe de création pour ouvrir la page de configuration d'une session.",
         "created_at": "Créée le",
         "creation_password": "Mot de passe de création",
+        "date": "Date",
+        "date_placeholder": "JJ/MM/AAAA",
         "delete": "Supprimer",
         "delete_expense": "Supprimer la dépense",
         "delete_session_password_placeholder": "Tapez le mot de passe puis Entrée",
@@ -237,6 +246,7 @@ TRANSLATIONS = {
         "hero_friends": "4 amis",
         "hero_kicker": "Week-ends, voyages, colocs temporaires",
         "hero_weekend": "1 week-end",
+        "home": "Accueil",
         "index_title": "Nikount",
         "new_creation_password": "Nouveau mot de passe de création",
         "new_session": "Nouvelle session",
@@ -278,6 +288,7 @@ TRANSLATIONS = {
         "superadmin_setup_help": "Ce mot de passe protégera l'accès à la liste globale des sessions.",
         "title": "Titre",
         "to": "à",
+        "toggle_participants": "Cocher/décocher tous les participants",
         "total_amount": "Montant total",
         "unknown": "Inconnu",
         "use_semicolon_placeholder": "Utilisez \";\" pour ajouter plusieurs participants",
@@ -288,7 +299,9 @@ TRANSLATIONS = {
         "payer": "payeur",
         "error_amount_invalid": "Le montant doit être un nombre positif valide.",
         "error_concerned_required": "Sélectionnez au moins un participant concerné.",
+        "error_date_invalid": "La date doit utiliser le format JJ/MM/AAAA.",
         "error_expense_name_required": "Le nom de la dépense est requis.",
+        "error_invalid_date_for": "Date invalide pour {expense_name}.",
         "error_invalid_amount_for": "Montant invalide pour {expense_name}.",
         "error_participant_cannot_remove": "{participant_name} ne peut pas être supprimé car ce participant est déjà utilisé dans une ou plusieurs dépenses.",
         "error_participant_name_required": "Le nom du participant est requis.",
@@ -530,6 +543,26 @@ def parse_amount_cents(amount):
     return amount_cents
 
 
+def today_display_date():
+    return date.today().strftime("%d/%m/%Y")
+
+
+def parse_expense_date(expense_date):
+    try:
+        parsed_date = datetime.strptime(expense_date.strip(), "%d/%m/%Y").date()
+    except ValueError:
+        return None
+    return parsed_date.isoformat()
+
+
+def format_expense_date(expense_date):
+    try:
+        parsed_date = datetime.strptime(expense_date, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return ""
+    return parsed_date.strftime("%d/%m/%Y")
+
+
 def get_balance_class(amount_cents):
     if amount_cents < 0:
         return "balance-negative"
@@ -615,6 +648,7 @@ def render_session_page(
     expense_error=None,
     expense_name="",
     expense_amount="",
+    expense_date=None,
     expense_payer="",
     expense_concerned=None,
     expense_form_mode="create",
@@ -663,10 +697,13 @@ def render_session_page(
                     participant_label(item["name"], record_value(item, "emoji"))
                     for item in expense["concerned_names"]
                 ],
+                "expense_date_text": format_expense_date(expense["expense_date"]),
             }
         )
     default_concerned = [participant["public_id"] for participant in participants]
 
+    if expense_date is None:
+        expense_date = today_display_date()
     if expense_concerned is None:
         expense_concerned = default_concerned
     expenses_edit_mode = (
@@ -690,6 +727,7 @@ def render_session_page(
         expense_error=expense_error,
         expense_name=expense_name,
         expense_amount=expense_amount,
+        expense_date=expense_date,
         expense_payer=expense_payer,
         expense_concerned=expense_concerned,
         expense_form_mode=expense_form_mode,
@@ -716,6 +754,7 @@ def build_demo_page_data():
             "public_id": "demo-expense-1",
             "name": translate("demo_expense_groceries"),
             "amount_cents": 8460,
+            "expense_date": "2026-04-24",
             "payer_participant_public_id": "demo-alice",
             "concerned_participant_public_ids": [
                 "demo-alice",
@@ -728,6 +767,7 @@ def build_demo_page_data():
             "public_id": "demo-expense-2",
             "name": translate("demo_expense_parking"),
             "amount_cents": 1800,
+            "expense_date": "2026-04-25",
             "payer_participant_public_id": "demo-bob",
             "concerned_participant_public_ids": ["demo-alice", "demo-bob"],
         },
@@ -735,6 +775,7 @@ def build_demo_page_data():
             "public_id": "demo-expense-3",
             "name": translate("demo_expense_brunch"),
             "amount_cents": 6300,
+            "expense_date": "2026-04-26",
             "payer_participant_public_id": "demo-chloe",
             "concerned_participant_public_ids": [
                 "demo-alice",
@@ -747,6 +788,7 @@ def build_demo_page_data():
             "public_id": "demo-expense-4",
             "name": translate("demo_expense_museum"),
             "amount_cents": 3600,
+            "expense_date": "2026-04-26",
             "payer_participant_public_id": "demo-nora",
             "concerned_participant_public_ids": [
                 "demo-bob",
@@ -786,6 +828,7 @@ def build_demo_page_data():
                 **expense,
                 "status": "approved",
                 "submitted_by_role": "admin",
+                "expense_date_text": format_expense_date(expense["expense_date"]),
                 "payer_display_name": participant_label(
                     payer["name"], payer["emoji"]
                 ),
@@ -822,6 +865,7 @@ def build_demo_page_data():
         "expense_error": None,
         "expense_name": "",
         "expense_amount": "",
+        "expense_date": today_display_date(),
         "expense_payer": "",
         "expense_concerned": [participant["public_id"] for participant in participants],
         "expense_form_mode": "create",
@@ -1119,6 +1163,7 @@ def add_expense(token):
 
     expense_name = request.form.get("name", "").strip()
     expense_amount = request.form.get("amount", "").strip()
+    expense_date_raw = request.form.get("expense_date", "").strip()
     expense_payer = request.form.get("payer_participant_public_id", "").strip()
     expense_concerned = request.form.getlist("concerned_participant_public_ids")
 
@@ -1130,6 +1175,7 @@ def add_expense(token):
             expense_error=translate("error_expense_name_required"),
             expense_name=expense_name,
             expense_amount=expense_amount,
+            expense_date=expense_date_raw,
             expense_payer=expense_payer,
             expense_concerned=expense_concerned,
         )
@@ -1143,6 +1189,21 @@ def add_expense(token):
             expense_error=translate("error_amount_invalid"),
             expense_name=expense_name,
             expense_amount=expense_amount,
+            expense_date=expense_date_raw,
+            expense_payer=expense_payer,
+            expense_concerned=expense_concerned,
+        )
+
+    expense_date = parse_expense_date(expense_date_raw)
+    if expense_date is None:
+        return render_session_page(
+            session=session,
+            role=role,
+            token=token,
+            expense_error=translate("error_date_invalid"),
+            expense_name=expense_name,
+            expense_amount=expense_amount,
+            expense_date=expense_date_raw,
             expense_payer=expense_payer,
             expense_concerned=expense_concerned,
         )
@@ -1156,6 +1217,7 @@ def add_expense(token):
             expense_error=translate("error_payer_required"),
             expense_name=expense_name,
             expense_amount=expense_amount,
+            expense_date=expense_date_raw,
             expense_payer=expense_payer,
             expense_concerned=expense_concerned,
         )
@@ -1175,6 +1237,7 @@ def add_expense(token):
             expense_error=translate("error_concerned_required"),
             expense_name=expense_name,
             expense_amount=expense_amount,
+            expense_date=expense_date_raw,
             expense_payer=expense_payer,
             expense_concerned=expense_concerned,
         )
@@ -1183,6 +1246,7 @@ def add_expense(token):
         session_public_id=session["public_id"],
         name=expense_name,
         amount_cents=amount_cents,
+        expense_date=expense_date,
         payer_participant_public_id=expense_payer,
         concerned_participant_public_ids=selected_participant_ids,
         submitted_by_role=role,
@@ -1207,6 +1271,7 @@ def edit_expense(token, expense_public_id):
         token=token,
         expense_name=expense["name"],
         expense_amount=f"{expense['amount_cents'] / 100:.2f}",
+        expense_date=format_expense_date(expense["expense_date"]),
         expense_payer=expense["payer_participant_public_id"] or "",
         expense_concerned=expense["concerned_participant_public_ids"],
         expense_form_mode="edit",
@@ -1232,6 +1297,7 @@ def duplicate_expense(token, expense_public_id):
         session_public_id=session["public_id"],
         name=original_expense["name"],
         amount_cents=original_expense["amount_cents"],
+        expense_date=original_expense["expense_date"],
         payer_participant_public_id=original_expense[
             "payer_participant_public_id"
         ],
@@ -1261,6 +1327,7 @@ def bulk_update_expenses(token):
     for expense in expenses:
         expense_public_id = expense["public_id"]
         amount_raw = request.form.get(f"amount_{expense_public_id}", "").strip()
+        date_raw = request.form.get(f"date_{expense_public_id}", "").strip()
         payer_participant_public_id = request.form.get(
             f"payer_{expense_public_id}", ""
         ).strip()
@@ -1276,6 +1343,18 @@ def bulk_update_expenses(token):
                 token=token,
                 expenses_table_error=translate(
                     "error_invalid_amount_for", expense_name=expense["name"]
+                ),
+                expenses_edit_mode=True,
+            )
+
+        expense_date = parse_expense_date(date_raw)
+        if expense_date is None:
+            return render_session_page(
+                session=session,
+                role=role,
+                token=token,
+                expenses_table_error=translate(
+                    "error_invalid_date_for", expense_name=expense["name"]
                 ),
                 expenses_edit_mode=True,
             )
@@ -1312,6 +1391,7 @@ def bulk_update_expenses(token):
                 "expense_public_id": expense_public_id,
                 "name": expense["name"],
                 "amount_cents": amount_cents,
+                "expense_date": expense_date,
                 "payer_participant_public_id": payer_participant_public_id,
                 "concerned_participant_public_ids": selected_participant_ids,
             }
@@ -1323,6 +1403,7 @@ def bulk_update_expenses(token):
             expense_public_id=update["expense_public_id"],
             name=update["name"],
             amount_cents=update["amount_cents"],
+            expense_date=update["expense_date"],
             payer_participant_public_id=update["payer_participant_public_id"],
             concerned_participant_public_ids=update[
                 "concerned_participant_public_ids"
@@ -1350,6 +1431,7 @@ def update_expense_view(token, expense_public_id):
 
     expense_name = request.form.get("name", "").strip()
     expense_amount = request.form.get("amount", "").strip()
+    expense_date_raw = request.form.get("expense_date", "").strip()
     expense_payer = request.form.get("payer_participant_public_id", "").strip()
     expense_concerned = request.form.getlist("concerned_participant_public_ids")
 
@@ -1361,6 +1443,7 @@ def update_expense_view(token, expense_public_id):
             expense_error=translate("error_expense_name_required"),
             expense_name=expense_name,
             expense_amount=expense_amount,
+            expense_date=expense_date_raw,
             expense_payer=expense_payer,
             expense_concerned=expense_concerned,
             expense_form_mode="edit",
@@ -1376,6 +1459,23 @@ def update_expense_view(token, expense_public_id):
             expense_error=translate("error_amount_invalid"),
             expense_name=expense_name,
             expense_amount=expense_amount,
+            expense_date=expense_date_raw,
+            expense_payer=expense_payer,
+            expense_concerned=expense_concerned,
+            expense_form_mode="edit",
+            editing_expense_id=expense_public_id,
+        )
+
+    expense_date = parse_expense_date(expense_date_raw)
+    if expense_date is None:
+        return render_session_page(
+            session=session,
+            role=role,
+            token=token,
+            expense_error=translate("error_date_invalid"),
+            expense_name=expense_name,
+            expense_amount=expense_amount,
+            expense_date=expense_date_raw,
             expense_payer=expense_payer,
             expense_concerned=expense_concerned,
             expense_form_mode="edit",
@@ -1391,6 +1491,7 @@ def update_expense_view(token, expense_public_id):
             expense_error=translate("error_payer_required"),
             expense_name=expense_name,
             expense_amount=expense_amount,
+            expense_date=expense_date_raw,
             expense_payer=expense_payer,
             expense_concerned=expense_concerned,
             expense_form_mode="edit",
@@ -1412,6 +1513,7 @@ def update_expense_view(token, expense_public_id):
             expense_error=translate("error_concerned_required"),
             expense_name=expense_name,
             expense_amount=expense_amount,
+            expense_date=expense_date_raw,
             expense_payer=expense_payer,
             expense_concerned=expense_concerned,
             expense_form_mode="edit",
@@ -1423,6 +1525,7 @@ def update_expense_view(token, expense_public_id):
         expense_public_id=expense_public_id,
         name=expense_name,
         amount_cents=amount_cents,
+        expense_date=expense_date,
         payer_participant_public_id=expense_payer,
         concerned_participant_public_ids=selected_participant_ids,
     )
@@ -1520,6 +1623,7 @@ def mark_reimbursement_done(token):
         session_public_id=session["public_id"],
         name="reimbursement",
         amount_cents=amount_cents,
+        expense_date=date.today().isoformat(),
         payer_participant_public_id=payer_participant_public_id,
         concerned_participant_public_ids=[concerned_participant_public_id],
         submitted_by_role=role,

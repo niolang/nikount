@@ -8,6 +8,7 @@
 </head>
 <body>
     <div class="page-shell">
+        {% include "home_link.html" %}
         <section class="overview-card">
             <h1>{{ session["title"] }} - {{ t(role) }}</h1>
             <div class="meta-list">
@@ -55,7 +56,7 @@
                 <p class="muted">{{ t("no_participants_yet") }}</p>
                 {% endif %}
 
-                {% if role == "admin" %}
+                {% if role == "admin" and session["status"] == "open" %}
                 <div class="overview-subsection">
                     {% if participant_error %}
                     <p class="alert alert-error">{{ participant_error }}</p>
@@ -77,6 +78,7 @@
         </section>
 
         <div class="card-stack">
+            {% if session["status"] == "open" %}
             <section class="card entry-card card-soft">
                 <div>
                     <h3>{% if expense_form_mode == "edit" %}{{ t("edit_expense") }}{% else %}{{ t("add_expense") }}{% endif %}</h3>
@@ -126,10 +128,34 @@
                                     required
                                 >
                             </p>
+
+                            <p class="expense-date-field">
+                                <input
+                                    id="expense-date"
+                                    name="expense_date"
+                                    type="text"
+                                    inputmode="numeric"
+                                    value="{{ expense_date }}"
+                                    placeholder="{{ t('date_placeholder') }}"
+                                    maxlength="10"
+                                    oninput="this.value = this.value.replace(/[^0-9/]/g, '').slice(0, 10);"
+                                    onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
+                                    required
+                                >
+                            </p>
                         </div>
 
                         <div>
-                            <label>{{ t("concerned_participants") }}</label>
+                            <div class="field-label-row">
+                                <label>{{ t("concerned_participants") }}</label>
+                                <button
+                                    class="action-icon-button toggle-checks-button"
+                                    type="button"
+                                    data-toggle-checkboxes="concerned_participant_public_ids"
+                                    aria-label="{{ t('toggle_participants') }}"
+                                    title="{{ t('toggle_participants') }}"
+                                >&#9745;&#65039;</button>
+                            </div>
                             <div class="concerned-selector">
                                 {% for participant in participants %}
                                 <label>
@@ -175,6 +201,7 @@
                     {% endif %}
                 </div>
             </section>
+            {% endif %}
 
             <section class="card reimbursements-card">
                 <h2>{{ t("reimbursements") }}</h2>
@@ -188,7 +215,7 @@
                             <input type="hidden" name="payer_participant_public_id" value="{{ reimbursement['from_participant_public_id'] }}">
                             <input type="hidden" name="concerned_participant_public_id" value="{{ reimbursement['to_participant_public_id'] }}">
                             <input type="hidden" name="amount_cents" value="{{ reimbursement['amount_cents'] }}">
-                            <button type="submit">{{ t("reimbursement_done") }}</button>
+                            <button class="reimbursement-done-button" type="submit" aria-label="{{ t('reimbursement_done') }}" title="{{ t('reimbursement_done') }}">&#9989;</button>
                         </form>
                         {% endif %}
                     </span>
@@ -225,8 +252,6 @@
                                 <th>{{ t("expense") }}</th>
                                 <th>{{ t("amount") }}</th>
                                 <th>{{ t("paid_by") }}</th>
-                                <th>{{ t("status") }}</th>
-                                <th>{{ t("submitted_by") }}</th>
                                 {% for participant in participants %}
                                 <th>{{ participant["emoji"] }} {{ participant["name"] }}</th>
                                 {% endfor %}
@@ -240,6 +265,23 @@
                             <tr>
                                 <td data-label="{{ t('expense') }}">
                                     {% if expense["name"].lower() == "reimbursement" %}{{ t("reimbursement_expense") }}{% else %}{{ expense["name"] }}{% endif %}
+                                    <span class="expense-date-text">
+                                        {% if expenses_edit_mode %}
+                                        <input
+                                            class="table-input table-date-input"
+                                            name="date_{{ expense['public_id'] }}"
+                                            type="text"
+                                            inputmode="numeric"
+                                            value="{{ expense['expense_date_text'] }}"
+                                            placeholder="{{ t('date_placeholder') }}"
+                                            maxlength="10"
+                                            oninput="this.value = this.value.replace(/[^0-9/]/g, '').slice(0, 10);"
+                                            required
+                                        >
+                                        {% else %}
+                                        {{ expense["expense_date_text"] }}
+                                        {% endif %}
+                                    </span>
                                 </td>
                                 <td data-label="{{ t('amount') }}">
                                     {% if expenses_edit_mode %}
@@ -269,12 +311,6 @@
                                     {{ expense["payer_display_name"] }}
                                     {% endif %}
                                 </td>
-                                <td data-label="{{ t('status') }}">
-                                    <span class="badge {% if expense['status'] == 'approved' %}badge-approved{% elif expense['status'] == 'pending' %}badge-pending{% else %}badge-rejected{% endif %}">
-                                        {{ t(expense["status"]) }}
-                                    </span>
-                                </td>
-                                <td data-label="{{ t('submitted_by') }}">{{ t(expense["submitted_by_role"]) }}</td>
                                 {% for participant in participants %}
                                 <td
                                     class="cell-center participant-expense-cell {% if participant['public_id'] in expense['concerned_participant_public_ids'] %}is-concerned{% else %}not-concerned{% endif %}"
@@ -296,6 +332,15 @@
                                 {% if not expenses_edit_mode and not demo_mode %}
                                 <td class="actions-cell" data-label="{{ t('actions') }}">
                                     <div class="inline-actions">
+                                        {% if expense["status"] != "approved" %}
+                                            {% if role == "admin" and expense["status"] == "pending" %}
+                                            <form method="post" action="{{ url_for('approve_expense', token=token, expense_public_id=expense['public_id']) }}">
+                                                <button class="action-icon-button action-icon-approve" type="submit" aria-label="{{ t('approve') }}" title="{{ t('approve') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#9744;&#65039;</button>
+                                            </form>
+                                            {% else %}
+                                            <span class="action-status-icon" aria-label="{{ t(expense['status']) }}" title="{{ t(expense['status']) }}">&#9744;&#65039;</span>
+                                            {% endif %}
+                                        {% endif %}
                                         {% if role == "admin" or expense["submitted_by_role"] == "viewer" %}
                                         <a class="action-icon-button" href="{{ url_for('edit_expense', token=token, expense_public_id=expense['public_id']) }}" aria-label="{{ t('edit_expense') }}" title="{{ t('edit') }}">&#9999;&#65039;</a>
                                         <form method="post" action="{{ url_for('duplicate_expense', token=token, expense_public_id=expense['public_id']) }}">
@@ -306,14 +351,6 @@
                                         <form method="post" action="{{ url_for('delete_expense_view', token=token, expense_public_id=expense['public_id']) }}">
                                             <button class="action-icon-button action-icon-danger" type="submit" aria-label="{{ t('delete_expense') }}" title="{{ t('delete') }}" {% if session["status"] != "open" %}disabled{% endif %}>&#128465;&#65039;</button>
                                         </form>
-                                        {% if expense["status"] == "pending" %}
-                                        <form method="post" action="{{ url_for('approve_expense', token=token, expense_public_id=expense['public_id']) }}">
-                                            <button type="submit" {% if session["status"] != "open" %}disabled{% endif %}>{{ t("approve") }}</button>
-                                        </form>
-                                        <form method="post" action="{{ url_for('reject_expense', token=token, expense_public_id=expense['public_id']) }}">
-                                            <button class="button-danger" type="submit" {% if session["status"] != "open" %}disabled{% endif %}>{{ t("reject") }}</button>
-                                        </form>
-                                        {% endif %}
                                         {% endif %}
                                     </div>
                                 </td>
@@ -337,5 +374,29 @@
         </div>
         {% include "footer.html" %}
     </div>
+    <script>
+        document.querySelectorAll("[data-toggle-checkboxes]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                var form = button.closest("form");
+                if (!form) {
+                    return;
+                }
+
+                var checkboxName = button.dataset.toggleCheckboxes;
+                var checkboxes = Array.from(
+                    form.querySelectorAll('input[type="checkbox"][name="' + checkboxName + '"]')
+                );
+                var shouldCheck = checkboxes.some(function (checkbox) {
+                    return !checkbox.checked && !checkbox.disabled;
+                });
+
+                checkboxes.forEach(function (checkbox) {
+                    if (!checkbox.disabled) {
+                        checkbox.checked = shouldCheck;
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

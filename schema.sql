@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     payer_participant_public_id TEXT,
     name TEXT NOT NULL,
     amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+    expense_date TEXT NOT NULL DEFAULT CURRENT_DATE,
     status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (session_public_id) REFERENCES sessions (public_id),

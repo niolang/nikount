@@ -8,6 +8,7 @@
 </head>
 <body>
     <div class="page-shell">
+        {% include "home_link.html" %}
         <section class="overview-card">
             <h1>{% if setup_mode %}{{ t("set_superadmin_password") }}{% else %}{{ t("superadmin_access") }}{% endif %}</h1>
             <p class="muted">

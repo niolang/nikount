@@ -64,6 +64,7 @@ def init_db():
         with open(schema_path, "r", encoding="utf-8") as schema_file:
             connection.executescript(schema_file.read())
         remove_session_description_column(connection)
+        add_expense_date_column(connection)
         ensure_unique_participant_emojis(connection)
         connection.commit()
     finally:
@@ -109,6 +110,25 @@ def remove_session_description_column(connection):
 
         DROP TABLE sessions;
         ALTER TABLE sessions_without_description RENAME TO sessions;
+        """
+    )
+
+
+def add_expense_date_column(connection):
+    if "expense_date" in get_table_columns(connection, "expenses"):
+        return
+
+    connection.execute(
+        """
+        ALTER TABLE expenses
+        ADD COLUMN expense_date TEXT NOT NULL DEFAULT ''
+        """
+    )
+    connection.execute(
+        """
+        UPDATE expenses
+        SET expense_date = COALESCE(DATE(created_at), DATE('now'))
+        WHERE expense_date = ''
         """
     )
 
@@ -549,6 +569,7 @@ def insert_expense(
     session_public_id,
     name,
     amount_cents,
+    expense_date,
     payer_participant_public_id,
     concerned_participant_public_ids,
     submitted_by_role,
@@ -568,10 +589,11 @@ def insert_expense(
                 submitted_by_role,
                 name,
                 amount_cents,
+                expense_date,
                 status,
                 payer_participant_public_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 expense_public_id,
@@ -579,6 +601,7 @@ def insert_expense(
                 submitted_by_role,
                 name,
                 amount_cents,
+                expense_date,
                 status,
                 payer_participant_public_id,
             ),
@@ -609,7 +632,7 @@ def list_expenses(session_public_id):
     try:
         expense_rows = connection.execute(
             """
-            SELECT e.public_id, e.name, e.amount_cents, e.status,
+            SELECT e.public_id, e.name, e.amount_cents, e.expense_date, e.status,
                    e.created_at, e.submitted_by_role, payer.name AS payer_name,
                    payer.emoji AS payer_emoji,
                    e.payer_participant_public_id
@@ -617,7 +640,7 @@ def list_expenses(session_public_id):
             LEFT JOIN participants payer
                 ON payer.public_id = e.payer_participant_public_id
             WHERE e.session_public_id = ?
-            ORDER BY e.created_at DESC
+            ORDER BY e.expense_date DESC, e.created_at DESC, e.public_id DESC
             """,
             (session_public_id,),
         ).fetchall()
@@ -653,6 +676,7 @@ def list_expenses(session_public_id):
                 "public_id": row["public_id"],
                 "name": row["name"],
                 "amount_cents": row["amount_cents"],
+                "expense_date": row["expense_date"],
                 "status": row["status"],
                 "created_at": row["created_at"],
                 "submitted_by_role": row["submitted_by_role"],
@@ -676,7 +700,7 @@ def get_expense(session_public_id, expense_public_id):
     try:
         expense_row = connection.execute(
             """
-            SELECT public_id, name, amount_cents, status,
+            SELECT public_id, name, amount_cents, expense_date, status,
                    payer_participant_public_id, created_at, submitted_by_role
             FROM expenses
             WHERE session_public_id = ? AND public_id = ?
@@ -703,6 +727,7 @@ def get_expense(session_public_id, expense_public_id):
         "public_id": expense_row["public_id"],
         "name": expense_row["name"],
         "amount_cents": expense_row["amount_cents"],
+        "expense_date": expense_row["expense_date"],
         "status": expense_row["status"],
         "payer_participant_public_id": expense_row["payer_participant_public_id"],
         "created_at": expense_row["created_at"],
@@ -718,6 +743,7 @@ def update_expense(
     expense_public_id,
     name,
     amount_cents,
+    expense_date,
     payer_participant_public_id,
     concerned_participant_public_ids,
 ):
@@ -728,12 +754,14 @@ def update_expense(
             UPDATE expenses
             SET name = ?,
                 amount_cents = ?,
+                expense_date = ?,
                 payer_participant_public_id = ?
             WHERE session_public_id = ? AND public_id = ?
             """,
             (
                 name,
                 amount_cents,
+                expense_date,
                 payer_participant_public_id,
                 session_public_id,
                 expense_public_id,
@@ -799,7 +827,7 @@ def get_approved_expenses_for_reimbursements(session_public_id):
             JOIN participants payer
                 ON payer.public_id = e.payer_participant_public_id
             WHERE e.session_public_id = ? AND e.status = 'approved'
-            ORDER BY e.created_at ASC, e.public_id ASC
+            ORDER BY e.expense_date ASC, e.created_at ASC, e.public_id ASC
             """,
             (session_public_id,),
         ).fetchall()
